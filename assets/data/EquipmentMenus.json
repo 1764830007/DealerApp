@@ -1,0 +1,66 @@
+[{
+    "id": "equipment-1",
+    "title": "设备管理汇总",
+    "icon": "account-card",
+    "link": "/location/RealLocation"
+},
+{
+    "id": "equipment-2",
+    "title": "设备统计报告",
+    "icon": "airplane-settings",
+    "link": "/location/RealLocation"
+},
+{
+     "id": "equipment-3",
+    "title": "设备故障报警",
+    "icon": "card",
+    "link": "/location/RealLocation"
+},
+{
+     "id": "equipment-4",
+    "title": "电子围栏",
+    "icon": "heart-settings",
+    "link": "/location/RealLocation"
+},
+{
+     "id": "equipment-5",
+    "title": "设备绑定申请列表",
+    "icon": "clover",
+    "link": "/location/RealLocation"
+},
+{
+     "id": "equipment-6",
+    "title": "创建绑定申请",
+    "icon": "clover-outline",
+    "link": "/location/RealLocation"
+},
+{
+     "id": "equipment-7",
+    "title": "获取地理位置",
+    "icon": "paperclip",
+    "link": "/location/RealLocation"
+},
+{
+     "id": "equipment-8",
+    "title": "test1",
+    "icon": "wallpaper",
+    "link": "/location/RealLocation"
+},{
+     "id": "equipment-9",
+    "title": "test2",
+    "icon": "apple",
+    "link": "/location/RealLocation"
+},
+{
+     "id": "equipment-10",
+    "title": "test3",
+    "icon": "github",
+    "link": "/location/RealLocation"
+},
+{
+     "id": "equipment-11",
+    "title": "camera",
+    "icon": "paperclip",
+    "link": "/camera/Camera"
+}
+]

@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, ReactNode, useContext, useEffect, useState } from 'react';
 import { useColorScheme } from 'react-native';
 import { MD3DarkTheme, MD3LightTheme, Provider as PaperProvider } from 'react-native-paper';
@@ -54,11 +55,48 @@ interface ThemeProviderProps {
   children: ReactNode;
 }
 
+// AsyncStorage 键名
+const THEME_MODE_STORAGE_KEY = 'theme_mode';
+
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   const systemColorScheme = useColorScheme();
   const [themeMode, setThemeMode] = useState<ThemeMode>('system');
   const [currentTheme, setCurrentTheme] = useState<'light' | 'dark'>('light');
   const [paperTheme, setPaperTheme] = useState(customLightTheme);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // 从存储中加载主题设置
+  useEffect(() => {
+    const loadThemeMode = async () => {
+      try {
+        const savedThemeMode = await AsyncStorage.getItem(THEME_MODE_STORAGE_KEY);
+        if (savedThemeMode) {
+          setThemeMode(savedThemeMode as ThemeMode);
+        }
+      } catch (error) {
+        console.error('Failed to load theme mode from storage:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadThemeMode();
+  }, []);
+
+  // 保存主题设置到存储
+  const saveThemeMode = async (mode: ThemeMode) => {
+    try {
+      await AsyncStorage.setItem(THEME_MODE_STORAGE_KEY, mode);
+    } catch (error) {
+      console.error('Failed to save theme mode to storage:', error);
+    }
+  };
+
+  // 更新主题模式并保存
+  const updateThemeMode = (mode: ThemeMode) => {
+    setThemeMode(mode);
+    saveThemeMode(mode);
+  };
 
   // 根据主题模式和系统设置计算当前主题
   useEffect(() => {
@@ -75,16 +113,22 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   }, [currentTheme]);
 
   const toggleTheme = () => {
-    setThemeMode(currentTheme === 'light' ? 'dark' : 'light');
+    const newMode = currentTheme === 'light' ? 'dark' : 'light';
+    updateThemeMode(newMode);
   };
 
   const value: ThemeContextType = {
     themeMode,
     currentTheme,
     paperTheme,
-    setThemeMode,
+    setThemeMode: updateThemeMode,
     toggleTheme,
   };
+
+  // 如果正在加载，显示空白页面
+  if (isLoading) {
+    return null;
+  }
 
   return (
     <ThemeContext.Provider value={value}>

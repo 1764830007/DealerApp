@@ -4,14 +4,18 @@ import {
   StyleSheet,
   View
 } from "react-native";
-import { Appbar } from "react-native-paper";
+import { Appbar, useTheme } from "react-native-paper";
 import equipmentMenus from "../../assets/data/EquipmentMenus.json";
+import { useTheme as useCustomTheme } from '../contexts/ThemeContext';
 
 export default function DeviceScreen() {
+  const { currentTheme } = useCustomTheme();
+  const theme = useTheme();
+
   return (
-    <View style={styles.container}>
-      <Appbar.Header style={styles.bar}>
-        <Appbar.Content title="设备管理" />
+    <View style={[styles.container, { backgroundColor: currentTheme === 'dark' ? theme.colors.surfaceVariant : '#eee' }]}>
+      <Appbar.Header style={[styles.bar, { backgroundColor: currentTheme === 'dark' ? theme.colors.surface : '#FFFFFF' }]}>
+        <Appbar.Content title="设备管理" titleStyle={{ color: currentTheme === 'dark' ? theme.colors.onSurface : '#000000' }} />
       </Appbar.Header> 
 
       <FlatList

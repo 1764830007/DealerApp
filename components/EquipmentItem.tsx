@@ -1,19 +1,25 @@
 import { EquipmentMenuProps } from "@/constants/types";
 import { router } from 'expo-router';
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { Icon } from "react-native-paper";
+import { Icon, useTheme } from "react-native-paper";
+import { useTheme as useCustomTheme } from '../app/contexts/ThemeContext';
 
 export default function EquipmentItem({ equipmentMenu }: EquipmentMenuProps) {
+  const { currentTheme } = useCustomTheme();
+  const theme = useTheme();
 
   return (
     <TouchableOpacity 
-    style={styles.profileList} 
+    style={[styles.profileList, { 
+      backgroundColor: currentTheme === 'dark' ? theme.colors.surface : '#FFFFFF',
+      shadowColor: currentTheme === 'dark' ? '#000' : '#000',
+    }]} 
     onPress={() => {router.push(equipmentMenu.link as any)}}>
         <View style={styles.leftContent}>
-          <Icon source={equipmentMenu.icon} size={24} />
-          <Text style={styles.profileListContent}>{equipmentMenu.title}</Text>
+          <Icon source={equipmentMenu.icon} size={24} color={currentTheme === 'dark' ? theme.colors.onSurface : '#000000'} />
+          <Text style={[styles.profileListContent, { color: currentTheme === 'dark' ? theme.colors.onSurface : '#000000' }]}>{equipmentMenu.title}</Text>
         </View>
-        <Icon source="chevron-right" size={24} />
+        <Icon source="chevron-right" size={24} color={currentTheme === 'dark' ? theme.colors.outline : '#666666'} />
     </TouchableOpacity>
   );
 }

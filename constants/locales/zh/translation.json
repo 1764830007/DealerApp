@@ -1,0 +1,41 @@
+{
+  "home": {
+    "index": "首页",
+    "equipment": "设备",
+    "setting": "设置",
+    "toBeCompleted": "待完成",
+    "pendingAssignment": "待派工 ",
+    "inProgress": "进行中",
+    "pendingDepart": "待出发",
+    "noWorkOrder": "您目前没有在执行中的工单，请选择带出发的工单进行出工",
+    "applicationWorkOrder": "工单申请",
+    "warrantyCard": "保修卡",
+    "electronicPhoneBook": "电子图册",
+    "servicebook": "服务手册",
+    "deviceManagement": "设备管理",
+    "serviceNotice": "服务公告",
+    "allOrder": "全部工单",
+    "seeAll": "查看所有",
+    "productModel": "产品型号",
+    "productSerialNumber": "产品序列号",
+    "reportTime": "报告时间",
+    "repariDept": "报修部门",
+    "orderRefunded": "已退单"
+  },
+  "setting": {
+    "phone": "电话号码",
+    "email": "邮箱",
+    "deepcolor": "深色模式",
+    "lightcolor": "明亮模式",
+    "system": "跟随系统",
+    "logout": "退出登录",
+    "PrivacyNotice": "隐私公告",
+    "contractUs": "联系我们",
+    "about": "关于"
+  },
+  "changeLocale": "修改语言",
+  "equipment": {
+    "equipment": "设备",
+    "management": "设备管理"
+  }
+}

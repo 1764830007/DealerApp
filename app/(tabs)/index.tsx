@@ -1,469 +1,456 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { LinearGradient } from 'expo-linear-gradient';
+import { useLocalization } from '@/hooks/locales/LanguageContext';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import React, { useState } from 'react';
 import {
-  Alert,
-  Modal,
+  SafeAreaView,
   ScrollView,
-  StyleSheet, Text,
-  View
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { Appbar, Avatar, Button, Icon, useTheme } from 'react-native-paper';
-import { Tabs, TabScreen, TabsProvider } from 'react-native-paper-tabs';
-import { ThemedContainer } from '../../components/ThemedContainer';
-import DeviceForm from '../DeviceForm';
-import SecondTab from '../SecondTab';
-import { api } from '../services/api';
+import {
+  Button,
+  Card,
+  Icon,
+  Paragraph,
+  useTheme
+} from 'react-native-paper';
+// 工单接口定义
+interface WorkOrder {
+  code: string;
+  status: string;
+  productModel: string;
+  serialNumber: string;
+  reportTime: string;
+  constructionSite: string;
+  maintenanceDept: string;
+}
 
-export default function Index() {
-  const router = useRouter();
-  const [isFormVisible, setIsFormVisible] = useState(false);
-  const [devices, setDevices] = useState<{name: string; type: string}[]>([]);
-  const [deviceCount, setDeviceCount] = useState(0);
-  const [apiData, setApiData] = useState<any>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+// 导航项接口
+interface NavItem {
+  icon: string;
+  label: string;
+  route: string;
+}
+
+const Index = () => {
+  const { t } = useLocalization();
   const theme = useTheme();
+  const router = useRouter();
+  const [activeNav, setActiveNav] = useState('home');
 
-  const handleAddDeviceClick = () => {
-    setIsFormVisible(true);
+  // 工单数据
+  const workOrders: WorkOrder[] = [
+    {
+      code: 'SEMZX202509110002',
+      status: '待派工',
+      productModel: 'SEM656D',
+      serialNumber: 'S5303700',
+      reportTime: '2025/9/11 11:30',
+      constructionSite: '',
+      maintenanceDept: '涉县维修部',
+    },
+    {
+      code: 'SEMWX202411130003',
+      status: '已退单',
+      productModel: 'SEM919',
+      serialNumber: 'SEM06130',
+      reportTime: '2024/11/13 10:05',
+      constructionSite: '',
+      maintenanceDept: '',
+    },
+    {
+      code: 'SEMZX202509100001',
+      status: '执行中',
+      productModel: 'SEM816',
+      serialNumber: 'S5302456',
+      reportTime: '2025/9/10 09:15',
+      constructionSite: '邯郸市建设大道',
+      maintenanceDept: '邯郸维修部',
+    },
+  ];
+
+  // 导航数据
+  const navItems: NavItem[] = [
+    { icon: 'home', label: '首页', route: 'home' },
+    { icon: 'clipboard-list', label: '工单', route: 'workorders' },
+    { icon: 'tools', label: '设备', route: 'equipment' },
+    { icon: 'account', label: '我的', route: 'profile' },
+  ];
+
+  // 功能按钮点击事件
+  const handleFuncBtnPress = (funcName: string) => {
+    console.log(`${funcName} 按钮被点击`);
   };
 
-  const handleCloseForm = () => {
-    setIsFormVisible(false);
+  // 查看所有工单点击事件
+  const handleViewAllPress = () => {
+    console.log('查看所有工单');
   };
 
-  const handleAddDevice = (name: string, type: string) => {
-    const newDevice = { name, type };
-    setDevices([...devices, newDevice]);
-    setDeviceCount(prev => prev + 1);
-    setIsFormVisible(false);
+  // 工单点击事件
+  const handleWorkOrderPress = (orderCode: string) => {
+    console.log(`工单 ${orderCode} 被点击`);
   };
 
-  const handleLogout = async () => {
-    try {
-      await AsyncStorage.removeItem('isLoggedIn');
-      await AsyncStorage.removeItem('username');
-      
-      // 使用 router 进行导航，兼容移动端和 web 端
-      router.replace('/login');
-    } catch (error) {
-      console.error('Logout error:', error);
-    }
+  // 导航项点击事件
+  const handleNavPress = (route: string) => {
+    setActiveNav(route);
+    console.log(`导航到 ${route}`);
   };
 
-  // 保存token到本地存储
-  const saveToken = async () => {
-    try {
-      await AsyncStorage.setItem('authToken', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjE1MTIiLCJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoiRjhNSl9saW1pbmdodSIsImh0dHA6Ly9zY2hlbWFzLnhtbHNvYXAub3JnL3dzLzIwMDUvMDUvaWRlbnRpdHkvY2xhaW1zL2VtYWlsYWRkcmVzcyI6ImxpYW5nLmxpLm1pbkBzaW1lZGFyYnkuY29tLmhrIiwiQXNwTmV0LklkZW50aXR5LlNlY3VyaXR5U3RhbXAiOiIzNDQ4ZWFiMS0zYWNkLTNiZDgtZDU0Yi0zOWZhMjUxYjYyMGMiLCJzdWIiOiIxNTEyIiwianRpIjoiYWIwNGY2NGQtZGNlNC00MTk3LWEyYzItNWY5OTExYzZiMGI2IiwiaWF0IjoxNzU4MDg5MzU4LCJTZXNzaW9uLk1haW5EZWFsZXJDb2RlIjoiRjhNSiIsIm5iZiI6MTc1ODA4OTM1OCwiZXhwIjoxNzU4MTc1NzU4LCJpc3MiOiJEQ1AiLCJhdWQiOiJEQ1AifQ.rVoiTUgyRpaUGNCkI080-W26XNGR2MAXUU-g2MNpco0');
-      Alert.alert('Token已保存', '认证token已成功保存到本地存储');
-    } catch (error) {
-      Alert.alert('保存失败', '保存token时发生错误');
-    }
-  };
-
-  // 获取设备列表
-  const handleGetEquipments = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      // 直接使用API地址调用，并使用 Equipment 类型接收数据
-      const data = await api.get('services/app/EquipmentService/Equipments?limit=10&offset=0');
-      console.log('API响应数据:', data);
-      setApiData(data);
-      
-      // 根据API响应结构正确获取设备数量
-      const deviceCount = Array.isArray(data) ? data.length : (data as any)?.result?.length || 0;
-      Alert.alert('API测试成功', `成功获取设备列表，共${deviceCount}台设备`);
-    } catch (err: any) {
-      setError(err.message || 'API请求失败');
-      Alert.alert('请求失败', err.message || '请检查网络连接和服务器状态');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // POST请求示例
-  const handlePostApiCall = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      // 示例：创建一个新的帖子
-      const data = await api.post('https://jsonplaceholder.typicode.com/posts', {
-        title: '测试标题',
-        body: '测试内容',
-        userId: 1,
-      });
-      setApiData(data);
-      Alert.alert('POST请求成功', '数据已成功创建');
-    } catch (err: any) {
-      setError(err.message || 'POST请求失败');
-      Alert.alert('POST请求失败', err.message || '请检查网络连接');
-    } finally {
-      setLoading(false);
+  // 获取工单状态对应的颜色
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case '待派工':
+        return theme.colors.primary;
+      case '已退单':
+        return theme.colors.error;
+      case '执行中':
+        return theme.colors.error;
+      default:
+        return theme.colors.outline;
     }
   };
 
   return (
-    <ThemedContainer>
-      <ScrollView>
-        <View style={styles.container}>
-          <Appbar.Header style={[styles.bar, { backgroundColor: theme.colors.primary }]}>
-            <Appbar.Content
-              title="袁满华"
-              titleStyle={{ color: theme.colors.onPrimary }}
-            />
-            <Appbar.Action 
-              icon="headset" 
-              style={[styles.barIcon, { backgroundColor: theme.colors.onPrimary }]} 
-              onPress={() => { }} 
-            />
-            <Appbar.Action 
-              icon="bell" 
-              style={[styles.barIcon, { backgroundColor: theme.colors.onPrimary }]} 
-              onPress={() => { }} 
-            />
-          </Appbar.Header>
-
-          <LinearGradient
-            colors={['#D2B48C', '#F5DEB3']} // 浅棕色到浅黄色
-            start={{ x: 0, y: 0 }}           // 从左开始
-            end={{ x: 1, y: 0 }}             // 到右结束
-            style={[styles.addDevice, { padding: 20, justifyContent: 'space-between' }]}
-          >
-            <View>
-              <Text style={{ color: theme.colors.onSurface }}>设备总数</Text>
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <Text style={{ fontSize: 20, fontWeight: 'bold', color: theme.colors.onSurface }}>{deviceCount}</Text>
-                <Text style={{ marginLeft: 15, color: theme.colors.onSurface }}>台</Text>
-                <Icon source="chevron-right" size={20} color={theme.colors.outline} />
-              </View>
-            </View>
-            <View>
-              <Button
-                onPress={handleAddDeviceClick}
-                mode="contained"
-                style={styles.loginButton}
-                buttonColor="orange"
-                icon="plus"
-              >
-                添加设备
-              </Button>
-            </View>
-          </LinearGradient>
-
-          <View style={[styles.addDevice, { padding: 20, backgroundColor: theme.colors.surface }]}>
-            <View style={styles.rowContainer}>
-              <View style={styles.centeredItem}>
-                <Text style={{ color: theme.colors.onSurface }}>在线设备</Text>
-                <Text style={{ fontSize: 20, fontWeight: 'bold', color: theme.colors.onSurface }}>0</Text>
-              </View>
-              <View style={styles.centeredItem}>
-                <Text style={{ color: theme.colors.onSurface }}>离线设备</Text>
-                <Text style={{ fontSize: 20, fontWeight: 'bold', color: theme.colors.onSurface }}>0</Text>
-              </View>
-              <View style={styles.centeredItem}>
-                <Text style={{ color: theme.colors.onSurface }}>故障报警</Text>
-                <Text style={{ fontSize: 20, fontWeight: 'bold', color: theme.colors.onSurface }}>0</Text>
-              </View>
-              <View style={styles.centeredItem}>
-                <Text style={{ color: theme.colors.onSurface }}>执行中工单</Text>
-                <Text style={{ fontSize: 20, fontWeight: 'bold', color: theme.colors.onSurface }}>0</Text>
-              </View>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <ScrollView style={styles.scrollView}>
+        {/* 顶部公司名称与图标 */}
+        <View style={styles.topBar}>
+          <Text style={[styles.companyName, { color: theme.colors.onBackground }]}>涉县威远机械设备有限公司</Text>
+          <View style={styles.topIcons}>
+            <Icon source="headset" size={24} color={theme.colors.onBackground} />
+            <View style={styles.bellIcon}>
+              <Icon source="bell" size={24} color={theme.colors.onBackground} />
             </View>
           </View>
+        </View>
 
-          {/* API测试区域 */}
-          <View style={[styles.addDevice, { padding: 20, marginTop: 20, backgroundColor: theme.colors.surface }]}>
-            <Text style={[styles.sectionTitle, { color: theme.colors.onSurface }]}>API测试</Text>
-            
-            <View style={styles.apiButtonContainer}>
-              <Button
-                onPress={saveToken}
-                mode="contained"
-                style={styles.apiButton}
-                buttonColor="green"
-              >
-                保存Token
-              </Button>
-              
-              <Button
-                onPress={handleGetEquipments}
-                mode="contained"
-                style={styles.apiButton}
-                loading={loading}
-                disabled={loading}
-              >
-                获取设备列表
-              </Button>
-            </View>
-
-            <View style={styles.apiButtonContainer}>
-              <Button
-                onPress={handlePostApiCall}
-                mode="outlined"
-                style={styles.apiButton}
-                loading={loading}
-                disabled={loading}
-              >
-                POST请求测试
-              </Button>
-            </View>
-
-            {error && (
-              <View style={styles.errorContainer}>
-                <Text style={styles.errorText}>错误: {error}</Text>
-              </View>
-            )}
-
-            {apiData && (
-              <View style={[styles.apiResultContainer, { backgroundColor: theme.colors.surfaceVariant }]}>
-                <Text style={[styles.resultTitle, { color: theme.colors.onSurface }]}>API响应数据:</Text>
-                <Text style={[styles.resultText, { color: theme.colors.onSurface }]}>
-                  {JSON.stringify(apiData, null, 2)}
-                </Text>
-              </View>
-            )}
-          </View>
-
+        {/* 待完成统计区 */}
+        <View style={[styles.todoStats,{ backgroundColor: theme.colors.surface, shadowColor: theme.dark ? '#000' : '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.3, shadowRadius: 4, elevation: 5 }]}>
           <View style={{
-            marginTop: 20,
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            paddingHorizontal: 16
+            backgroundColor: theme.dark ? '#333333' : '#367cc7ff'
           }}>
-            {/* 项目1 */}
-            <View style={{ alignItems: 'center' }}>
-              <Avatar.Icon size={40} icon="folder" style={{ backgroundColor: theme.colors.surface }} />
-              <Text style={{ color: theme.colors.onSurface }}>电子图册</Text>
-            </View>
-
-            {/* 项目2 */}
-            <View style={{ alignItems: 'center' }}>
-              <Avatar.Icon size={40} icon="folder" style={{ backgroundColor: theme.colors.surface }} />
-              <Text style={{ color: theme.colors.onSurface }}>服务手册</Text>
-            </View>
-
-            {/* 项目3 */}
-            <View style={{ alignItems: 'center' }}>
-              <Avatar.Icon size={40} icon="folder" style={{ backgroundColor: theme.colors.surface }} />
-              <Text style={{ color: theme.colors.onSurface }}>服务工单</Text>
-            </View>
-
-            {/* 项目4 */}
-            <View style={{ alignItems: 'center' }}>
-              <Avatar.Icon size={40} icon="folder" style={{ backgroundColor: theme.colors.surface }} />
-              <Text style={{ color: theme.colors.onSurface }}>保修信息</Text>
-            </View>
-
-            {/* 项目5 */}
-            <View style={{ alignItems: 'center' }}>
-              <Avatar.Icon size={40} icon="folder" style={{ backgroundColor: theme.colors.surface }} />
-              <Text style={{ color: theme.colors.onSurface }}>我的请求</Text>
+            <View style={styles.statsHeader}>
+              <Text style={[styles.statsHeaderText, { color: theme.colors.onSurface }]}>{t('home.toBeCompleted')} (97)</Text>
+              <Icon source="chevron-right" size={20} color={theme.colors.onSurface} />
             </View>
           </View>
 
-          <View style={{ 
-            height: 800, 
-            width:'95%',
-            alignSelf: 'center', 
-            marginTop:20, 
-            backgroundColor: theme.colors.surface 
-          }}>
-            <TabsProvider defaultIndex={0}>
-              <Tabs
-                style={{ ...styles.tabsContainer, backgroundColor: theme.colors.surface }}
-                tabLabelStyle={{ ...styles.tabLabel, color: theme.colors.onSurface }}
-                theme={{
-                  colors: {
-                    primary: theme.colors.primary
-                  }
-                }}
-              >
-                {/* 第一个标签页 */}
-                <TabScreen label="设备列表">
-                  <View>
-                    <SecondTab/>
-                  </View>
-                </TabScreen>
-
-                {/* 第二个标签页 */}
-                <TabScreen label="设备分组">
-                  <View style={styles.tabContent}>
-                    <Text style={{ color: theme.colors.onSurface }}>这里是设备分组内容</Text>
-                  </View>
-                </TabScreen>
-
-                {/* 第三个标签页 */}
-                <TabScreen label="设备统计">
-                  <View style={styles.tabContent}>
-                    <Text style={{ color: theme.colors.onSurface }}>这里是设备统计数据</Text>
-                  </View>
-                </TabScreen>
-
-                <TabScreen label="我的设备">
-                  <View style={styles.tabContent}>
-                    {devices.length > 0 ? (
-                      devices.map((device, index) => (
-                        <View key={index} style={[styles.deviceItem, { borderBottomColor: theme.colors.outline }]}>
-                          <Text style={{ color: theme.colors.onSurface }}>{device.name} - {device.type}</Text>
-                        </View>
-                      ))
-                    ) : (
-                      <Text style={{ color: theme.colors.onSurface }}>暂无设备，请添加设备</Text>
-                    )}
-                  </View>
-                </TabScreen>
-              </Tabs>
-            </TabsProvider>
+          <View style={[styles.statsNumbers, { backgroundColor: theme.colors.surface }]}>
+            <View style={styles.statItem}>
+              <Text style={[styles.statNumber, { color: theme.colors.onSurface }]}>95</Text>
+              <Text style={[styles.statLabel, { color: theme.colors.outline }]}>{t('home.pendingAssignment')}</Text>
+            </View>
+            <View style={styles.statItem}>
+              <Text style={[styles.statNumber, { color: theme.colors.onSurface }]}>2</Text>
+              <Text style={[styles.statLabel, { color: theme.colors.outline }]}>{t('home.pendingDepart')}</Text>
+            </View>
+            <View style={styles.statItem}>
+              <Text style={[styles.statNumber, { color: theme.colors.onSurface }]}>0</Text>
+              <Text style={[styles.statLabel, { color: theme.colors.outline }]}>{t('home.inProgress')}</Text>
+            </View>
           </View>
+          <View style={[styles.statItem, { backgroundColor: theme.colors.primary,margin: 12, borderRadius: 8, padding: 8 }]}>
+            <Text style={[styles.statsTipText, { color: '#fff' }]}>
+              {t('home.noWorkOrder')}
+            </Text>
+          </View>
+        </View>
+
+        {/* 功能按钮区 */}
+        <View style={styles.funcButtons}>
+          <TouchableOpacity
+            style={[styles.funcBtn, { backgroundColor: theme.colors.surfaceVariant }]}
+            onPress={() => handleFuncBtnPress('工单申请')}
+          >
+            <Icon source="file-plus" size={24} color={theme.colors.onSurface} />
+            <Text style={[styles.funcBtnText, { color: theme.colors.onSurface }]}>{t('home.applicationWorkOrder')}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.funcBtn, { backgroundColor: theme.colors.surfaceVariant }]}
+            onPress={() => handleFuncBtnPress('保修卡')}
+          >
+            <Icon source="file" size={24} color={theme.colors.onSurface} />
+            <Text style={[styles.funcBtnText, { color: theme.colors.onSurface }]}>{t('home.warrantyCard')}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.funcBtn, { backgroundColor: theme.colors.surfaceVariant }]}
+            onPress={() => handleFuncBtnPress('电子图册')}
+          >
+            <Icon source="book" size={24} color={theme.colors.onSurface} />
+            <Text style={[styles.funcBtnText, { color: theme.colors.onSurface }]}>{t('home.electronicPhoneBook')}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.funcBtn, { backgroundColor: theme.colors.surfaceVariant }]}
+            onPress={() => handleFuncBtnPress('服务手册')}
+          >
+            <Icon source="file-heart" size={24} color={theme.colors.onSurface} />
+            <Text style={[styles.funcBtnText, { color: theme.colors.onSurface }]}>{t('home.servicebook')}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.funcBtn, { backgroundColor: theme.colors.surfaceVariant }]}
+            onPress={() => handleFuncBtnPress('设备管理')}
+          >
+            <Icon source="tools" size={24} color={theme.colors.onSurface} />
+            <Text style={[styles.funcBtnText, { color: theme.colors.onSurface }]}>{t('home.deviceManagement')}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.funcBtn, { backgroundColor: theme.colors.surfaceVariant }]}
+            onPress={() => handleFuncBtnPress('服务公告')}
+          >
+            <Icon source="email" size={24} color={theme.colors.onSurface} />
+            <Text style={[styles.funcBtnText, { color: theme.colors.onSurface }]}>{t('home.serviceNotice')}</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* 全部工单区 */}
+        <View style={styles.allWorkOrders}>
+          <View style={styles.workOrdersHeader}>
+            <Text style={[styles.workOrdersHeaderText, { color: theme.colors.onBackground }]}>{t('home.allOrder')}</Text>
+            <TouchableOpacity onPress={handleViewAllPress}>
+              <View style={[styles.viewAll, { backgroundColor: theme.colors.surfaceVariant }]}>
+                <Text style={[styles.viewAllText, { color: theme.colors.onSurface }]}>{t('home.seeAll')}</Text>
+                <Icon source="chevron-right" size={16} color={theme.colors.onSurface} />
+              </View>
+            </TouchableOpacity>
+          </View>
+          {workOrders.map((order) => (
+            <Card
+              key={order.code}
+              style={[styles.workOrderCard, {
+                backgroundColor: theme.colors.surface,
+                borderColor: theme.colors.outline,
+                borderWidth: 1
+              }]}
+            >
+              {/* 移除了Card.Content的默认内边距，让header与边框贴合 */}
+              <View style={styles.cardContent}>
+                <View style={[styles.workOrderHeader,{
+                  backgroundColor: theme.dark ? '#333333' : '#82bcf9ff',
+                  borderTopLeftRadius: 8,
+                  borderTopRightRadius: 8
+                }]}>
+                  <Icon source="swap-vertical" size={20} color={theme.colors.primary} />
+                  <Text style={[styles.workOrderCode, { color: theme.colors.onSurface }]}>{order.code}</Text>
+                  <Button
+                    mode="outlined"
+                    style={styles.workOrderStatusBtn}
+                    labelStyle={styles.workOrderStatusLabel}
+                    color={getStatusColor(order.status)}
+                  >
+                    {order.status}
+                  </Button>
+                </View>
+                <View style={styles.workOrderInfo}>
+                  <Paragraph style={[styles.workOrderInfoItem, { color: theme.colors.onSurface }]}>
+                    {t('home.productModel')}： {order.productModel}
+                  </Paragraph>
+                  <Paragraph style={[styles.workOrderInfoItem, { color: theme.colors.onSurface }]}>
+                    {t('home.productSerialNumber')}： {order.serialNumber}
+                  </Paragraph>
+                  <Paragraph style={[styles.workOrderInfoItem, { color: theme.colors.onSurface }]}>
+                    {t('home.reportTime')}： {order.reportTime}
+                  </Paragraph>
+                  {order.constructionSite && (
+                    <Paragraph style={[styles.workOrderInfoItem, { color: theme.colors.onSurface }]}>
+                      {t('home.seeAll')}： {order.constructionSite}
+                    </Paragraph>
+                  )}
+                  {order.maintenanceDept && (
+                    <Paragraph style={[styles.workOrderInfoItem, { color: theme.colors.onSurface }]}>
+                      {t('home.repariDept')}： {order.maintenanceDept}
+                    </Paragraph>
+                  )}
+                </View>
+                <TouchableOpacity
+                  style={styles.workOrderArrow}
+                  onPress={() => handleWorkOrderPress(order.code)}
+                >
+                  <Icon source="chevron-right" size={20} color={theme.colors.outline} />
+                </TouchableOpacity>
+              </View>
+            </Card>
+          ))}
         </View>
       </ScrollView>
-
-      <Modal
-        visible={isFormVisible}
-        animationType="slide"
-        transparent={true}
-      >
-        <View style={styles.modalOverlay}>
-          <DeviceForm
-            visible={isFormVisible}
-            onClose={handleCloseForm}
-            onAddDevice={handleAddDevice}
-          />
-        </View>
-      </Modal>
-    </ThemedContainer>
+    </SafeAreaView>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  bar: {
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    zIndex: 1,
-  },
-  barIcon: {},
-  addDevice: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  rowContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  centeredItem: {
-    alignItems: 'center',
+  scrollView: {
     flex: 1,
   },
-  card: {
-    margin: 16,
-    elevation: 2,
-    height: 350
+  topBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    marginTop: 20,
   },
-  title: {
+  companyName: {
     fontSize: 18,
     fontWeight: 'bold',
   },
-  headerRight: {
+  topIcons: {
     flexDirection: 'row',
-    alignItems: 'center',
-    marginRight: 8,
   },
-  viewAllText: {
-    color: '#666',
-    marginRight: 4,
+  bellIcon: {
+    marginLeft: 24,
   },
-  content: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 40,
+  todoStats: {
+    marginHorizontal: 16,
+    marginVertical: 8,
+    borderRadius: 8,
   },
-  emptyText: {
-    color: '#999',
-    marginTop: 16,
-    fontSize: 14,
-  },
-  loginButton: {
-    marginTop: 0,
-    paddingVertical: 8,
-  },
-  tabsContainer: {
-    elevation: 2,
-  },
-  tabLabel: {
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-  tabActive: {
-    backgroundColor: '#1E90FF',
-    borderRadius: 4,
-  },
-  tabInactive: {
-    backgroundColor: 'transparent',
-  },
-  indicator: {
-    backgroundColor: 'white',
-    height: 3,
-  },
-  tabContent: {
-    flex: 1,
-    padding: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalOverlay: {
-    flex: 1,
-    justifyContent: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  },
-  deviceItem: {
-    padding: 10,
-    borderBottomWidth: 1,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 16,
-  },
-  apiButtonContainer: {
+  statsHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 16,
+    alignItems: 'center',
+    marginBottom: 12,
+    paddingTop: 12,
+    paddingLeft: 12,
+    paddingRight: 12,
+
   },
-  apiButton: {
-    flex: 1,
-    marginHorizontal: 8,
-  },
-  errorContainer: {
-    backgroundColor: '#ffebee',
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 16,
-  },
-  errorText: {
-    color: '#c62828',
-    fontSize: 14,
-  },
-  apiResultContainer: {
-    padding: 16,
-    borderRadius: 8,
-    borderWidth: 1,
-  },
-  resultTitle: {
+  statsHeaderText: {
     fontSize: 16,
+
+  },
+  statsNumbers: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginBottom: 8,
+    padding: 12,
+  },
+  statItem: {
+    alignItems: 'center',
+  },
+  statNumber: {
+    fontSize: 24,
     fontWeight: 'bold',
+  },
+  statLabel: {
+    fontSize: 12,
+  },
+  statsTip: {
+    borderRadius: 4,
+    padding: 8,
+  },
+  statsTipText: {
+    fontSize: 14,
+  },
+  funcButtons: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-around',
+    marginHorizontal: 16,
+    marginVertical: 8,
+  },
+  funcBtn: {
+    width: 60,
+    alignItems: 'center',
+    borderRadius: 8,
+    padding: 8,
     marginBottom: 8,
   },
-  resultText: {
+  funcBtnText: {
     fontSize: 12,
-    fontFamily: 'monospace',
-  }
+    marginTop: 4,
+  },
+  allWorkOrders: {
+    marginHorizontal: 16,
+    marginVertical: 8,
+  },
+  workOrdersHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  workOrdersHeaderText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  viewAll: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  viewAllText: {
+    fontSize: 12,
+    marginRight: 4,
+  },
+  workOrderCard: {
+    marginBottom: 8,
+    borderRadius: 8,
+    // 移除卡片默认内边距
+    padding: 0,
+    overflow: 'hidden' // 确保内容不会超出卡片边框
+  },
+  // 自定义卡片内容样式，替代Card.Content
+  cardContent: {
+    padding: 0,
+  },
+  workOrderHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    // 移除底部外边距
+    padding: 12, // 直接设置内边距
+  },
+  workOrderCode: {
+    flex: 1,
+    fontSize: 16,
+    marginLeft: 8,
+  },
+  workOrderStatusBtn: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    backgroundColor: '#cfcfcfff',
+  },
+  workOrderStatusLabel: {
+    fontSize: 12,
+    color: '#000000ff',
+  },
+  workOrderInfo: {
+    marginBottom: 8,
+    padding: 12, // 为内容区域添加内边距
+  },
+  workOrderInfoItem: {
+    fontSize: 14,
+    marginBottom: 4,
+  },
+  workOrderArrow: {
+    alignItems: 'flex-end',
+    padding: 12, // 为箭头添加内边距
+  },
+  bottomNav: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    paddingVertical: 8,
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+  },
+  navItem: {
+    alignItems: 'center',
+  },
+  navItemText: {
+    fontSize: 12,
+    marginTop: 2,
+  },
 });
+
+export default Index;

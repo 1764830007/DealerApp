@@ -2,9 +2,9 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 // import 'react-native-reanimated';
+import LanguageProvider from "@/hooks/locales/LanguageContext";
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
-
 export const unstable_settings = {
   anchor: '(tabs)',
 };
@@ -40,12 +40,15 @@ function RouteProtection({ children }: { children: React.ReactNode }) {
 
 export default function RootLayout() {
   return (
+    <LanguageProvider>
     <ThemeProvider>
       <AuthProvider>
         <RouteProtection>
           <Stack>
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
             <Stack.Screen name="dark-mode" options={{ headerShown: false }} />
+            <Stack.Screen name="changePhoneNumber" options={{ headerShown: false }} />
+            <Stack.Screen name="changeEmail" options={{ headerShown: false }} />
             {/* <Stack.Screen name="login" options={{ headerShown: false }} />
             <Stack.Screen name="testpage" options={{ headerShown: false }} /> */}
           </Stack>
@@ -53,5 +56,6 @@ export default function RootLayout() {
         </RouteProtection>
       </AuthProvider>
     </ThemeProvider>
+    </LanguageProvider>
   );
 }

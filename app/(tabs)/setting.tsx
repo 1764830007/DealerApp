@@ -1,14 +1,15 @@
+import { useLocalization } from '@/hooks/locales/LanguageContext';
 import { useRouter } from 'expo-router';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Appbar, Divider, Icon, Text, useTheme } from 'react-native-paper';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme as useCustomTheme } from '../contexts/ThemeContext';
-
 export default function SettingScreen() {
   const router = useRouter();
   const { logout } = useAuth();
   const { themeMode, currentTheme } = useCustomTheme();
   const theme = useTheme();
+  const { locale, setLanguage, t } = useLocalization();
 
   const handleLogout = async () => {
     try {
@@ -21,9 +22,9 @@ export default function SettingScreen() {
   // 获取当前主题显示文本
   const getThemeDisplayText = () => {
     if (themeMode === 'system') {
-      return '跟随系统';
+      return t('setting.system');
     } else {
-      return currentTheme === 'dark' ? '深色模式' : '明亮模式';
+      return currentTheme === 'dark' ? t('setting.deepcolor') : t('setting.lightcolor');
     }
   };
 
@@ -33,57 +34,62 @@ export default function SettingScreen() {
       <View style={styles.contentContainer}>
         <Appbar.Header style={[styles.bar, { backgroundColor: theme.colors.surface }]}>
           <Appbar.Content title="" />
-          <Appbar.Action 
-            icon="bell" 
-            style={[styles.barIcon, { backgroundColor: theme.colors.surface }]} 
-            onPress={() => { }} 
+          <Appbar.Action
+            icon="bell"
+            style={[styles.barIcon, { backgroundColor: theme.colors.surface }]}
+            onPress={() => { }}
           />
         </Appbar.Header>
-        
+
         <View style={[styles.subtitleContainer, { backgroundColor: theme.colors.surface }]}>
-          <Text style={[styles.subtitleText, { color: theme.colors.onSurface, fontSize:20 }]}>李岳叶</Text>
+          <Text style={[styles.subtitleText, { color: theme.colors.onSurface, fontSize: 20 }]}>李岳叶</Text>
           <View style={[styles.name, { marginTop: 20 }]}>
-            <Icon source="camera" size={15} color={theme.colors.onSurface} />
+            <Icon source="account" size={15} color={theme.colors.onSurface} />
             <Text style={[styles.subtitleText, { marginLeft: 10, color: theme.colors.onSurface }]}>涉县威远机械设备有限公司</Text>
           </View>
         </View>
+        <TouchableOpacity onPress={() => router.push('/changePhoneNumber')}>
+          <View style={[styles.profileList, { marginTop: 10, backgroundColor: theme.colors.surface }]}>
 
-        <View style={[styles.profileList, { marginTop: 10, backgroundColor: theme.colors.surface }]}>
-          <View style={styles.leftContent}>
-            <Icon source="phone" size={20} color={theme.colors.onSurface} />
-            <Text style={[styles.profileListContent, { color: theme.colors.onSurface }]}>电话号码</Text>
+            <View style={styles.leftContent}>
+              <Icon source="phone" size={20} color={theme.colors.onSurface} />
+              <Text style={[styles.profileListContent, { color: theme.colors.onSurface }]}>{t('setting.phone')}</Text>
+            </View>
+            <View style={styles.rightContent}>
+              <Text style={[styles.textRight, { color: theme.colors.outline }]}>188****8045</Text>
+              <Icon
+                source="chevron-right"
+                size={20}
+                color={theme.colors.outline}
+              />
+            </View>
           </View>
-          <View style={styles.rightContent}>
-            <Text style={[styles.textRight, { color: theme.colors.outline }]}>188****8045</Text>
-            <Icon
-              source="chevron-right"
-              size={20}
-              color={theme.colors.outline}
-            />
-          </View>
-        </View>
-        <View style={[styles.profileList, { marginTop: 10, backgroundColor: theme.colors.surface }]}>
-          <View style={styles.leftContent}>
-            <Icon source="email" size={20} color={theme.colors.onSurface} />
-            <Text style={[styles.profileListContent, { color: theme.colors.onSurface }]}>邮箱</Text>
-          </View>
-          <View style={styles.rightContent}>
-            <Text style={[styles.textRight, { color: theme.colors.outline }]}>11@aa.com</Text>
-            <Icon
-              source="chevron-right"
-              size={20}
-              color={theme.colors.outline}
-            />
-          </View>
-        </View>
+        </TouchableOpacity>
 
-        <TouchableOpacity 
+        <TouchableOpacity onPress={() => router.push('/changeEmail')}>
+          <View style={[styles.profileList, { marginTop: 10, backgroundColor: theme.colors.surface }]}>
+            <View style={styles.leftContent}>
+              <Icon source="email" size={20} color={theme.colors.onSurface} />
+              <Text style={[styles.profileListContent, { color: theme.colors.onSurface }]}>{t('setting.email')}</Text>
+            </View>
+            <View style={styles.rightContent}>
+              <Text style={[styles.textRight, { color: theme.colors.outline }]}>11@aa.com</Text>
+              <Icon
+                source="chevron-right"
+                size={20}
+                color={theme.colors.outline}
+              />
+            </View>
+          </View>
+        </TouchableOpacity>
+
+        <TouchableOpacity
           style={[styles.profileList, { marginTop: 10, backgroundColor: theme.colors.surface }]}
           onPress={() => router.push('/dark-mode')}
         >
           <View style={styles.leftContent}>
             <Icon source="moon-waxing-crescent" size={20} color={theme.colors.onSurface} />
-            <Text style={[styles.profileListContent, { color: theme.colors.onSurface }]}>深色模式</Text>
+            <Text style={[styles.profileListContent, { color: theme.colors.onSurface }]}>{t('setting.deepcolor')}</Text>
           </View>
           <View style={styles.rightContent}>
             <Text style={[styles.textRight, { color: theme.colors.outline }]}>{getThemeDisplayText()}</Text>
@@ -98,7 +104,7 @@ export default function SettingScreen() {
         <View style={[styles.profileList, { marginTop: 10, backgroundColor: theme.colors.surface }]}>
           <View style={styles.leftContent}>
             <Icon source="shield-account" size={20} color={theme.colors.onSurface} />
-            <Text style={[styles.profileListContent, { color: theme.colors.onSurface }]}>隐私公告</Text>
+            <Text style={[styles.profileListContent, { color: theme.colors.onSurface }]}>{t('setting.PrivacyNotice')}</Text>
           </View>
           <Icon
             source="chevron-right"
@@ -106,13 +112,13 @@ export default function SettingScreen() {
             color={theme.colors.outline}
           />
         </View>
-        
+
         <Divider bold={true} style={styles.divider} />
-        
+
         <View style={[styles.profileList, { backgroundColor: theme.colors.surface }]}>
           <View style={styles.leftContent}>
             <Icon source="alert-circle" size={20} color={theme.colors.onSurface} />
-            <Text style={[styles.profileListContent, { color: theme.colors.onSurface }]}>联系我们</Text>
+            <Text style={[styles.profileListContent, { color: theme.colors.onSurface }]}>{t('setting.contractus')}</Text>
           </View>
           <Icon
             source="chevron-right"
@@ -120,13 +126,13 @@ export default function SettingScreen() {
             color={theme.colors.outline}
           />
         </View>
-        
+
         <Divider bold={true} style={styles.divider} />
-        
+
         <View style={[styles.profileList, { backgroundColor: theme.colors.surface }]}>
           <View style={styles.leftContent}>
             <Icon source="read" size={20} color={theme.colors.onSurface} />
-            <Text style={[styles.profileListContent, { color: theme.colors.onSurface }]}>关于</Text>
+            <Text style={[styles.profileListContent, { color: theme.colors.onSurface }]}>{t('setting.about')}</Text>
           </View>
           <Icon
             source="chevron-right"
@@ -134,15 +140,26 @@ export default function SettingScreen() {
             color={theme.colors.outline}
           />
         </View>
-      </View>
 
+        <View style={{ padding: 20, marginTop: 20 }}>
+        <TouchableOpacity
+          style={[styles.logoutButton, { backgroundColor: '#37589eff' }]}
+          onPress={() => locale === 'zh' ?
+        setLanguage('en') : setLanguage('zh')}
+        >
+          <Text style={styles.logoutText}>{t('changeLocale')}</Text>
+        </TouchableOpacity>
+      </View>
+      </View>
+      
+     
       {/* 固定在底部的注销按钮 */}
       <View style={styles.logoutContainer}>
         <TouchableOpacity
           style={[styles.logoutButton, { backgroundColor: '#37589eff' }]}
           onPress={handleLogout}
         >
-          <Text style={styles.logoutText}>退出登录</Text>
+          <Text style={styles.logoutText}>{t('setting.logout')}</Text>
         </TouchableOpacity>
       </View>
     </View>

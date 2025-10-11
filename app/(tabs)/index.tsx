@@ -1,13 +1,16 @@
-import { useLocalization } from '@/hooks/locales/LanguageContext';
+import axios from 'axios';
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
+  Alert,
+  RefreshControl,
   SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
-  View,
+  View
 } from 'react-native';
 import {
   Button,
@@ -16,7 +19,9 @@ import {
   Paragraph,
   useTheme
 } from 'react-native-paper';
-// 工单接口定义
+import { useLocalization } from '../../hooks/locales/LanguageContext';
+
+// 前端工单接口定义
 interface WorkOrder {
   code: string;
   status: string;
@@ -27,103 +32,117 @@ interface WorkOrder {
   maintenanceDept: string;
 }
 
-// 导航项接口
-interface NavItem {
-  icon: string;
-  label: string;
-  route: string;
-}
-
 const Index = () => {
   const { t } = useLocalization();
   const theme = useTheme();
   const router = useRouter();
-  const [activeNav, setActiveNav] = useState('home');
+  const [workOrders, setWorkOrders] = useState<WorkOrder[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
-  // 工单数据
-  const workOrders: WorkOrder[] = [
-    {
-      code: 'SEMZX202509110002',
-      status: '待派工',
-      productModel: 'SEM656D',
-      serialNumber: 'S5303700',
-      reportTime: '2025/9/11 11:30',
-      constructionSite: '',
-      maintenanceDept: '涉县维修部',
-    },
-    {
-      code: 'SEMWX202411130003',
-      status: '已退单',
-      productModel: 'SEM919',
-      serialNumber: 'SEM06130',
-      reportTime: '2024/11/13 10:05',
-      constructionSite: '',
-      maintenanceDept: '',
-    },
-    {
-      code: 'SEMZX202509100001',
-      status: '执行中',
-      productModel: 'SEM816',
-      serialNumber: 'S5302456',
-      reportTime: '2025/9/10 09:15',
-      constructionSite: '邯郸市建设大道',
-      maintenanceDept: '邯郸维修部',
-    },
-  ];
+  // API配置
+  const API_URL = 'https://dcpqa.semdcp.com/api/services/app/WorkOrderService/GetWorkOrdersByParameters';
+  const TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjEzNiIsImh0dHA6Ly9zY2hlbWFzLnhtbHNvYXAub3JnL3dzLzIwMDUvMDUvaWRlbnRpdHkvY2xhaW1zL25hbWUiOiJDUUxfSmVyZW15bWFvIiwiaHR0cDovL3NjaGVtYXMueG1sc29hcC5vcmcvd3MvMjAwNS8wNS9pZGVudGl0eS9jbGFpbXMvZW1haWxhZGRyZXNzIjoieGluX21hb0AxNjMuY29tIiwiQXNwTmV0LklkZW50aXR5LlNlY3VyaXR5U3RhbXAiOiIzNDQ4ZWFiMS0zYWNkLTNiZDgtZDU0Yi0zOWZhMjUxYjYyMGMiLCJzdWIiOiIxMzYiLCJqdGkiOiI4MDBiMTVlZC04Y2Y2LTQ4YTEtOTA2Zi1mZjlmYmQ2NjEzYjYiLCJpYXQiOjE3NjAxNTYzMTUsIlNlc3Npb24uTWFpbkRlYWxlckNvZGUiOiJZMTRBIiwibmJmIjoxNzYwMTU2MzE1LCJleHAiOjE3NjAyNDI3MTUsImlzcyI6IkRDUCIsImF1ZCI6IkRDUCJ9.aSRHT3pXzj83IY8nAGOGg9uFcPnn45kD8HmdYmXfjtQ';
 
-  // 导航数据
-  const navItems: NavItem[] = [
-    { icon: 'home', label: '首页', route: 'home' },
-    { icon: 'clipboard-list', label: '工单', route: 'workorders' },
-    { icon: 'tools', label: '设备', route: 'equipment' },
-    { icon: 'account', label: '我的', route: 'profile' },
-  ];
+  // 获取工单数据
+  const fetchWorkOrders = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const response = await axios.post(
+        API_URL,
+        {
+          limit: 2,
+          orderByLastUpdatedTime: true,
+          offset: 0
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${TOKEN}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      if (response.data.success && response.data.result) {
+        // 转换API数据为前端格式
+        const transformedOrders: WorkOrder[] = response.data.result.data.map((order: any) => ({
+          code: order.workOrderNo,
+          status: order.workOrderStatus,
+          productModel: order.machineModel,
+          serialNumber: order.machineNo,
+          reportTime: formatDate(order.reportTime),
+          constructionSite: order.constructionLocation || '',
+          maintenanceDept: order.maintenanceDeptName || '',
+        }));
+        
+        setWorkOrders(transformedOrders);
+      } else {
+        throw new Error(response.data.error || '获取数据失败');
+      }
+    } catch (err: any) {
+      console.error('API调用错误:', err);
+      setError(err.message || '网络请求失败');
+      Alert.alert('错误', '获取工单数据失败，请检查网络连接');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 格式化日期
+  const formatDate = (dateString: string) => {
+    try {
+      const date = new Date(dateString);
+      return `${date.getFullYear()}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getDate().toString().padStart(2, '0')} ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+    } catch {
+      return dateString;
+    }
+  };
+
+  // 组件挂载时获取数据
+  useEffect(() => {
+    fetchWorkOrders();
+  }, []);
 
   // 功能按钮点击事件
   const handleFuncBtnPress = (funcName: string) => {
     console.log(`${funcName} 按钮被点击`);
   };
 
-  // 查看所有工单点击事件
-  const handleViewAllPress = () => {
-    console.log('查看所有工单');
+  // 刷新数据
+  const handleRefresh = () => {
+    fetchWorkOrders();
   };
 
-  // 工单点击事件
-  const handleWorkOrderPress = (orderCode: string) => {
-    console.log(`工单 ${orderCode} 被点击`);
-  };
-
-  // 导航项点击事件
-  const handleNavPress = (route: string) => {
-    setActiveNav(route);
-    console.log(`导航到 ${route}`);
-  };
-
-  // 获取工单状态对应的颜色
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case '待派工':
-        return theme.colors.primary;
-      case '已退单':
-        return theme.colors.error;
-      case '执行中':
-        return theme.colors.error;
-      default:
-        return theme.colors.outline;
-    }
-  };
+  // 下拉刷新处理函数
+  const onRefresh = React.useCallback(() => {
+    setRefreshing(true);
+    fetchWorkOrders().finally(() => {
+      setRefreshing(false);
+    });
+  }, []);
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <ScrollView style={styles.scrollView}>
+      <ScrollView 
+        style={styles.scrollView}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={[theme.colors.primary]}
+            tintColor={theme.colors.primary}
+          />
+        }
+      >
         {/* 顶部公司名称与图标 */}
         <View style={styles.topBar}>
-          <Text style={[styles.companyName, { color: theme.colors.onBackground }]}>涉县威远机械设备有限公司</Text>
+          <Text style={styles.companyName}>涉县威远机械设备有限公司</Text>
           <View style={styles.topIcons}>
-            <Icon source="headset" size={24} color={theme.colors.onBackground} />
             <View style={styles.bellIcon}>
-              <Icon source="bell" size={24} color={theme.colors.onBackground} />
+              <Icon source="bell" size={24} />
             </View>
           </View>
         </View>
@@ -209,71 +228,69 @@ const Index = () => {
         {/* 全部工单区 */}
         <View style={styles.allWorkOrders}>
           <View style={styles.workOrdersHeader}>
-            <Text style={[styles.workOrdersHeaderText, { color: theme.colors.onBackground }]}>{t('home.allOrder')}</Text>
-            <TouchableOpacity onPress={handleViewAllPress}>
-              <View style={[styles.viewAll, { backgroundColor: theme.colors.surfaceVariant }]}>
-                <Text style={[styles.viewAllText, { color: theme.colors.onSurface }]}>{t('home.seeAll')}</Text>
-                <Icon source="chevron-right" size={16} color={theme.colors.onSurface} />
+            <Text style={styles.workOrdersHeaderText}>{t('home.allOrder')}</Text>
+            <TouchableOpacity onPress={handleRefresh}>
+              <View style={styles.viewAll}>
+                <Text style={styles.viewAllText}>{t('home.seeAll')}</Text>
+                
               </View>
             </TouchableOpacity>
           </View>
-          {workOrders.map((order) => (
-            <Card
-              key={order.code}
-              style={[styles.workOrderCard, {
-                backgroundColor: theme.colors.surface,
-                borderColor: theme.colors.outline,
-                borderWidth: 1
-              }]}
-            >
-              {/* 移除了Card.Content的默认内边距，让header与边框贴合 */}
-              <View style={styles.cardContent}>
-                <View style={[styles.workOrderHeader,{
-                  backgroundColor: theme.dark ? '#333333' : '#82bcf9ff',
-                  borderTopLeftRadius: 8,
-                  borderTopRightRadius: 8
-                }]}>
-                  <Icon source="swap-vertical" size={20} color={theme.colors.primary} />
-                  <Text style={[styles.workOrderCode, { color: theme.colors.onSurface }]}>{order.code}</Text>
-                  <Button
-                    mode="outlined"
-                    style={styles.workOrderStatusBtn}
-                    labelStyle={styles.workOrderStatusLabel}
-                    color={getStatusColor(order.status)}
-                  >
-                    {order.status}
-                  </Button>
-                </View>
-                <View style={styles.workOrderInfo}>
-                  <Paragraph style={[styles.workOrderInfoItem, { color: theme.colors.onSurface }]}>
-                    {t('home.productModel')}： {order.productModel}
-                  </Paragraph>
-                  <Paragraph style={[styles.workOrderInfoItem, { color: theme.colors.onSurface }]}>
-                    {t('home.productSerialNumber')}： {order.serialNumber}
-                  </Paragraph>
-                  <Paragraph style={[styles.workOrderInfoItem, { color: theme.colors.onSurface }]}>
-                    {t('home.reportTime')}： {order.reportTime}
-                  </Paragraph>
-                  {order.constructionSite && (
-                    <Paragraph style={[styles.workOrderInfoItem, { color: theme.colors.onSurface }]}>
-                      {t('home.seeAll')}： {order.constructionSite}
+
+          {loading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" />
+              <Text style={styles.loadingText}>加载中...</Text>
+            </View>
+          ) : error ? (
+            <View style={styles.errorContainer}>
+              <Icon source="alert-circle" size={48} />
+              <Text style={styles.errorText}>{error}</Text>
+              <Button mode="contained" onPress={handleRefresh}>
+                重试
+              </Button>
+            </View>
+          ) : workOrders.length === 0 ? (
+            <View style={styles.emptyContainer}>
+              <Icon source="file-remove" size={48} />
+              <Text style={styles.emptyText}>暂无工单数据</Text>
+            </View>
+          ) : (
+            workOrders.map((order) => (
+              <Card key={order.code} style={styles.workOrderCard}>
+                <View style={styles.cardContent}>
+                  <View style={styles.workOrderHeader}>
+                    <Icon source="swap-vertical" size={20} />
+                    <Text style={styles.workOrderCode}>{order.code}</Text>
+                    <Button mode="outlined" style={styles.workOrderStatusBtn}>
+                      {order.status}
+                    </Button>
+                  </View>
+                  <View style={styles.workOrderInfo}>
+                    <Paragraph style={styles.workOrderInfoItem}>
+                      {t('home.productModel')} {order.productModel}
                     </Paragraph>
-                  )}
-                  {order.maintenanceDept && (
-                    <Paragraph style={[styles.workOrderInfoItem, { color: theme.colors.onSurface }]}>
-                      {t('home.repariDept')}： {order.maintenanceDept}
+                    <Paragraph style={styles.workOrderInfoItem}>
+                      {t('home.productSerialNumber')} {order.serialNumber}
                     </Paragraph>
-                  )}
+                    <Paragraph style={styles.workOrderInfoItem}>
+                      {t('home.reportTime')} {order.reportTime}
+                    </Paragraph>
+                    {order.constructionSite && (
+                      <Paragraph style={styles.workOrderInfoItem}>
+                        施工地点： {order.constructionSite}
+                      </Paragraph>
+                    )}
+                    {order.maintenanceDept && (
+                      <Paragraph style={styles.workOrderInfoItem}>
+                        {t('home.repariDept')} {order.maintenanceDept}
+                      </Paragraph>
+                    )}
+                  </View>
                 </View>
-                <TouchableOpacity
-                  style={styles.workOrderArrow}
-                  onPress={() => handleWorkOrderPress(order.code)}
-                >
-                  <Icon source="chevron-right" size={20} color={theme.colors.outline} />
-                </TouchableOpacity>
-              </View>
-            </Card>
-          ))}
+              </Card>
+            ))
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -286,6 +303,61 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
+  },
+  todoStats: {
+    marginHorizontal: 16,
+    marginVertical: 8,
+    borderRadius: 8,
+  },
+  statsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+    paddingTop: 12,
+    paddingLeft: 12,
+    paddingRight: 12,
+  },
+  statsHeaderText: {
+    fontSize: 16,
+  },
+  statsNumbers: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginBottom: 8,
+    padding: 12,
+  },
+  statItem: {
+    alignItems: 'center',
+  },
+  statNumber: {
+    fontSize: 24,
+    fontWeight: 'bold',
+  },
+  statLabel: {
+    fontSize: 12,
+  },
+  statsTipText: {
+    fontSize: 14,
+  },
+  funcButtons: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    marginHorizontal: 16,
+    marginVertical: 8,
+  },
+  funcBtn: {
+    width: '30%',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 12,
+  },
+  funcBtnText: {
+    marginTop: 8,
+    fontSize: 12,
+    textAlign: 'center',
   },
   topBar: {
     flexDirection: 'row',
@@ -304,66 +376,6 @@ const styles = StyleSheet.create({
   },
   bellIcon: {
     marginLeft: 24,
-  },
-  todoStats: {
-    marginHorizontal: 16,
-    marginVertical: 8,
-    borderRadius: 8,
-  },
-  statsHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-    paddingTop: 12,
-    paddingLeft: 12,
-    paddingRight: 12,
-
-  },
-  statsHeaderText: {
-    fontSize: 16,
-
-  },
-  statsNumbers: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginBottom: 8,
-    padding: 12,
-  },
-  statItem: {
-    alignItems: 'center',
-  },
-  statNumber: {
-    fontSize: 24,
-    fontWeight: 'bold',
-  },
-  statLabel: {
-    fontSize: 12,
-  },
-  statsTip: {
-    borderRadius: 4,
-    padding: 8,
-  },
-  statsTipText: {
-    fontSize: 14,
-  },
-  funcButtons: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-around',
-    marginHorizontal: 16,
-    marginVertical: 8,
-  },
-  funcBtn: {
-    width: 60,
-    alignItems: 'center',
-    borderRadius: 8,
-    padding: 8,
-    marginBottom: 8,
-  },
-  funcBtnText: {
-    fontSize: 12,
-    marginTop: 4,
   },
   allWorkOrders: {
     marginHorizontal: 16,
@@ -390,14 +402,36 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginRight: 4,
   },
+  loadingContainer: {
+    alignItems: 'center',
+    padding: 20,
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 14,
+  },
+  errorContainer: {
+    alignItems: 'center',
+    padding: 20,
+  },
+  errorText: {
+    marginTop: 10,
+    marginBottom: 20,
+    fontSize: 14,
+    textAlign: 'center',
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    padding: 20,
+  },
+  emptyText: {
+    marginTop: 10,
+    fontSize: 14,
+  },
   workOrderCard: {
     marginBottom: 8,
     borderRadius: 8,
-    // 移除卡片默认内边距
-    padding: 0,
-    overflow: 'hidden' // 确保内容不会超出卡片边框
   },
-  // 自定义卡片内容样式，替代Card.Content
   cardContent: {
     padding: 0,
   },
@@ -405,8 +439,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    // 移除底部外边距
-    padding: 12, // 直接设置内边距
+    padding: 12,
+    backgroundColor: '#82bcf9ff',
+    borderTopLeftRadius: 8,
+    borderTopRightRadius: 8,
   },
   workOrderCode: {
     flex: 1,
@@ -416,40 +452,13 @@ const styles = StyleSheet.create({
   workOrderStatusBtn: {
     paddingHorizontal: 8,
     paddingVertical: 2,
-    backgroundColor: '#cfcfcfff',
-  },
-  workOrderStatusLabel: {
-    fontSize: 12,
-    color: '#000000ff',
   },
   workOrderInfo: {
-    marginBottom: 8,
-    padding: 12, // 为内容区域添加内边距
+    padding: 12,
   },
   workOrderInfoItem: {
     fontSize: 14,
     marginBottom: 4,
-  },
-  workOrderArrow: {
-    alignItems: 'flex-end',
-    padding: 12, // 为箭头添加内边距
-  },
-  bottomNav: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
-    paddingVertical: 8,
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-  },
-  navItem: {
-    alignItems: 'center',
-  },
-  navItemText: {
-    fontSize: 12,
-    marginTop: 2,
   },
 });
 

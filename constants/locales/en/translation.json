@@ -1,32 +1,41 @@
 {
   "home": {
-    "index": "Homepage",
-    "equipment": "Equipment",
-    "setting": "Setting"
+    "index": "index",
+    "equipment": "equipment",
+    "setting": "setting",
+    "toBeCompleted": "To be completed",
+    "pendingAssignment": "Pending assignment",
+    "inProgress": "In progress",
+    "pendingDepart": "Pending depart",
+    "noWorkOrder": "You currently have no work orders in progress. Please select a work order to depart.",
+    "applicationWorkOrder": "Work Order Application",
+    "warrantyCard": "Warranty Card",
+    "electronicPhoneBook": "Electronic Phone Book",
+    "servicebook": "Service Book",
+    "deviceManagement": "Device Management",
+    "serviceNotice": "Service Notice",
+    "allOrder": "All Orders",
+    "seeAll": "See All",
+    "productModel": "Product Model",
+    "productSerialNumber": "Product Serial Number",
+    "reportTime": "Report Time",
+    "repariDept": "Repair Dept",
+    "orderRefunded": "Order Refunded"
   },
   "changeLocale": "change language",
   "setting": {
-    "personInfo": "Personal Info",
-    "email": "Email",
+    "phone": "PhoneNumber",
+    "email": "EmailAddress",
     "deepcolor": "Dark Mode",
     "lightcolor": "Light Mode",
-    "system": "System Default",
+    "system": "System",
     "logout": "Logout",
     "PrivacyNotice": "Privacy Notice",
     "contractUs": "Contact Us",
     "about": "About"
   },
   "equipment": {
-    "management": "Equipment Management",
-    "list": "Equipment List",
-    "statisticReport": "Equipment Statistic Report",
-    "faultAlert": "Equipment Fault Alert",
-    "fence": "Fence",
-     "bindlist": "Bind Request List",
-    "createBind": "Create Bind Request",
-    "count": "设备数",
-    "online": "在线数",
-    "offline": "离线",
-    "detail": "Equipment Detail"
+    "equipment": "equipment",
+    "management": "equipment management"
   }
 }

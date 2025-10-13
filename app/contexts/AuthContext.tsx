@@ -51,7 +51,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       console.log('🔴 Setting isLoggedIn to false...');
       setIsLoggedIn(false);
-      console.log('🔴 isLoggedIn set to false');
+      console.log('🔴 isLoggedIn set to false, should trigger route protection');
       
       console.log('🔴 Logout completed successfully');
     } catch (error) {

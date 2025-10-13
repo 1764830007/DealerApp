@@ -13,18 +13,31 @@ function RouteProtection({ children }: { children: React.ReactNode }) {
   const router = useRouter();
 
   useEffect(() => {
-    if (isLoggedIn === null) return; // Still checking auth status
+    console.log('🟡 RouteProtection useEffect triggered:', { isLoggedIn, segments });
+    
+    if (isLoggedIn === null) {
+      console.log('🟡 RouteProtection: Still checking auth status, returning early');
+      return; // Still checking auth status
+    }
 
     const inAuthGroup = segments[0] === 'User';
 
-    console.log("Route protection:", { isLoggedIn, segments });
+    console.log("🟡 RouteProtection analysis:", { 
+      isLoggedIn, 
+      segments, 
+      inAuthGroup,
+      shouldRedirectToLogin: !isLoggedIn && !inAuthGroup,
+      shouldRedirectToTabs: isLoggedIn && inAuthGroup 
+    });
 
     if (!isLoggedIn && !inAuthGroup) {
-      console.log('Redirecting to login');
+      console.log('🟡 RouteProtection: User logged out, redirecting to login');
       router.replace('/User/login');
     } else if (isLoggedIn && inAuthGroup) {
-      console.log("Redirecting to tabs");
+      console.log("🟡 RouteProtection: User logged in but in auth group, redirecting to tabs");
       router.replace("/(tabs)");
+    } else {
+      console.log('🟡 RouteProtection: No navigation needed');
     }
   }, [isLoggedIn, segments]);
 

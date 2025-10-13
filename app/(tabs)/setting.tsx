@@ -1,6 +1,6 @@
 import { useLocalization } from '@/hooks/locales/LanguageContext';
 import { useRouter } from 'expo-router';
-import { StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Alert, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Appbar, Divider, Icon, Text, useTheme } from 'react-native-paper';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme as useCustomTheme } from '../contexts/ThemeContext';
@@ -12,10 +12,18 @@ export default function SettingScreen() {
   const { locale, setLanguage, t } = useLocalization();
 
   const handleLogout = async () => {
+    console.log('🔴 LOGOUT BUTTON PRESSED - Starting logout process');
     try {
+      console.log('Logout initiated from settings page');
+      
+      // For debugging, let's first try without confirmation dialog
+      console.log('User confirmed logout');
       await logout();
+      console.log('Logout completed');
+      // Navigation will be handled by RouteProtection in _layout.tsx
     } catch (error) {
       console.error('Logout error:', error);
+      Alert.alert('Error', 'Failed to logout. Please try again.');
     }
   };
 
@@ -48,40 +56,19 @@ export default function SettingScreen() {
             <Text style={[styles.subtitleText, { marginLeft: 10, color: theme.colors.onSurface }]}>涉县威远机械设备有限公司</Text>
           </View>
         </View>
-        <TouchableOpacity onPress={() => router.push('/changePhoneNumber')}>
-          <View style={[styles.profileList, { marginTop: 10, backgroundColor: theme.colors.surface }]}>
-
-            <View style={styles.leftContent}>
-              <Icon source="phone" size={20} color={theme.colors.onSurface} />
-              <Text style={[styles.profileListContent, { color: theme.colors.onSurface }]}>{t('setting.phone')}</Text>
-            </View>
-            <View style={styles.rightContent}>
-              <Text style={[styles.textRight, { color: theme.colors.outline }]}>188****8045</Text>
-              <Icon
-                source="chevron-right"
-                size={20}
-                color={theme.colors.outline}
-              />
-            </View>
+        <View style={[styles.profileList, { marginTop: 10, backgroundColor: theme.colors.surface }]}>
+          <View style={styles.leftContent}>
+            <Icon source="shield-account" size={20} color={theme.colors.onSurface} />
+            <Text style={[styles.profileListContent, { color: theme.colors.onSurface }]}>{t('setting.personInfo')}</Text>
           </View>
-        </TouchableOpacity>
+          <Icon
+            source="chevron-right"
+            size={20}
+            color={theme.colors.outline}
+          />
+        </View>
 
-        <TouchableOpacity onPress={() => router.push('/changeEmail')}>
-          <View style={[styles.profileList, { marginTop: 10, backgroundColor: theme.colors.surface }]}>
-            <View style={styles.leftContent}>
-              <Icon source="email" size={20} color={theme.colors.onSurface} />
-              <Text style={[styles.profileListContent, { color: theme.colors.onSurface }]}>{t('setting.email')}</Text>
-            </View>
-            <View style={styles.rightContent}>
-              <Text style={[styles.textRight, { color: theme.colors.outline }]}>11@aa.com</Text>
-              <Icon
-                source="chevron-right"
-                size={20}
-                color={theme.colors.outline}
-              />
-            </View>
-          </View>
-        </TouchableOpacity>
+
 
         <TouchableOpacity
           style={[styles.profileList, { marginTop: 10, backgroundColor: theme.colors.surface }]}
@@ -118,7 +105,7 @@ export default function SettingScreen() {
         <View style={[styles.profileList, { backgroundColor: theme.colors.surface }]}>
           <View style={styles.leftContent}>
             <Icon source="alert-circle" size={20} color={theme.colors.onSurface} />
-            <Text style={[styles.profileListContent, { color: theme.colors.onSurface }]}>{t('setting.contractus')}</Text>
+            <Text style={[styles.profileListContent, { color: theme.colors.onSurface }]}>{t('setting.contractUs')}</Text>
           </View>
           <Icon
             source="chevron-right"
@@ -140,24 +127,17 @@ export default function SettingScreen() {
             color={theme.colors.outline}
           />
         </View>
+      </View>
 
-        <View style={{ padding: 20, marginTop: 20 }}>
-        <TouchableOpacity
-          style={[styles.logoutButton, { backgroundColor: '#37589eff' }]}
-          onPress={() => locale === 'zh' ?
-        setLanguage('en') : setLanguage('zh')}
-        >
-          <Text style={styles.logoutText}>{t('changeLocale')}</Text>
-        </TouchableOpacity>
-      </View>
-      </View>
-      
-     
       {/* 固定在底部的注销按钮 */}
       <View style={styles.logoutContainer}>
         <TouchableOpacity
           style={[styles.logoutButton, { backgroundColor: '#37589eff' }]}
-          onPress={handleLogout}
+          onPress={() => {
+            console.log('🔴 LOGOUT BUTTON TAPPED!');
+            handleLogout();
+          }}
+          activeOpacity={0.7}
         >
           <Text style={styles.logoutText}>{t('setting.logout')}</Text>
         </TouchableOpacity>
@@ -213,17 +193,18 @@ const styles = StyleSheet.create({
     marginLeft: 48,  // 20(icon) + 12(margin) + 16(padding)
   },
   logoutContainer: {
-    ...StyleSheet.absoluteFillObject, // 填充整个父容器
-    justifyContent: 'flex-end', // 垂直方向靠底部
-    padding: 20, // 底部和左右的间距
-    pointerEvents: 'none', // 让容器不拦截点击事件，避免影响底部内容
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: 20,
+    backgroundColor: 'transparent',
   },
   logoutButton: {
     padding: 15,
     borderRadius: 8,
     alignItems: 'center',
-    width: '100%', // 按钮宽度占满容器
-    pointerEvents: 'auto', // 恢复按钮的点击事件
+    width: '100%',
   },
   logoutText: {
     color: 'white',

@@ -1,186 +1,245 @@
-// app/services/api.ts - 简化版API封装
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import axios, { AxiosInstance } from 'axios';
+import axios from 'axios';
+import { router } from 'expo-router';
+import { NativeEventEmitter } from 'react-native';
+import { Consts } from '../../constants/config';
+import AuthService from './AuthService';
 
-const API_BASE_URL = 'https://dcpqa.semdcp.com/api/';
+// Create event emitter for auth-related events
+export const loginEvents = new NativeEventEmitter();
 
-// 创建axios实例
-const apiClient: AxiosInstance = axios.create({
-  baseURL: API_BASE_URL,
+// Define types for API responses
+interface RefreshTokenResponse {
+  result: string;
+  success: boolean;
+  error?: string;
+}
+
+// Create axios instance with default config
+const api = axios.create({
+  baseURL: Consts.Config.BaseUrl,
+  timeout: 30000,
   headers: {
-    'Content-Type': 'application/json'
+    'Content-Type': 'application/json',
   },
-  timeout: 10000,
-  withCredentials: false
 });
 
-// Token获取函数
-const acquireToken = async (): Promise<string> => {
-  try {
-    const token = await AsyncStorage.getItem('authToken');
-    if (!token) {
-      throw new Error('No token found');
-    }
-    return token;
-  } catch (error) {
-    console.error('Token获取失败:', error);
-    // 可以在这里添加导航到登录页面的逻辑
-    // navigation.navigate('Login');
-    throw error;
-  }
-};
+// Request interceptor for API calls
+api.interceptors.request.use(
+  async (config) => {
+    try {
+      // Print current AsyncStorage state
+      await printAsyncStorageContent();
+      
+      // Get auth token
+      const token = await AsyncStorage.getItem('authToken');
+      console.log('\n🔐 Auth Token Check:', {
+        exists: !!token,
+        length: token?.length || 0,
+        prefix: token?.substring(0, 10) + '...' || 'N/A'
+      });
 
-// 请求拦截器 - 添加认证Token
-apiClient.interceptors.request.use(async config => {
-  try {
-    // 获取Token并添加到请求头
-    const token = await acquireToken();
-    config.headers!['Authorization'] = 'Bearer ' + token;
-    
-    // 可以在这里添加多语言支持（如果需要）
-    // const shortTran = i18n.currentLocale.split('-')[0];
-    // const tran = i18n.currentLocale;
-    // config.headers!['.AspNetCore.Culture'] = `c=${shortTran}|uic=${tran}`;
-    
-    console.log('API请求:', {
-      url: config.url,
-      method: config.method,
-      hasToken: !!token
-    });
-    
-    return config;
-  } catch (error) {
-    console.error('请求拦截器错误:', error);
-    return Promise.reject(error);
-  }
-}, error => {
-  return Promise.reject(error);
-});
+      // Get refresh token (for debugging)
+      const refreshToken = await AsyncStorage.getItem('refreshToken');
+      console.log('🔄 Refresh Token Check:', {
+        exists: !!refreshToken,
+        length: refreshToken?.length || 0,
+        prefix: refreshToken?.substring(0, 10) + '...' || 'N/A',
+        timestamp: new Date().toISOString()
+      });
 
-// 响应拦截器 - 统一错误处理
-apiClient.interceptors.response.use(
-  response => {
-    return response;
-  },
-  async error => {
-    console.log('API响应错误:', {
-      status: error.response?.status,
-      url: error.config?.url,
-      method: error.config?.method
-    });
-
-    // 处理认证错误（401）
-    if (error.response?.status === 401) {
-      try {
-        await AsyncStorage.multiRemove(['authToken', 'isLoggedIn', 'refreshToken']);
-        console.log('认证已过期，Token已清除');
-        
-        // 跳转到登录页面
-        // navigation.navigate('Login');
-      } catch (storageError) {
-        console.error('清除Token失败:', storageError);
+      // Add token to headers if exists
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      } else {
+        console.warn('⚠️ No auth token found for request');
       }
-    }
 
-    // 统一错误消息处理
-    let errorMessage = error.response?.data?.message || error.message;
-    
-    switch (error.response?.status) {
-      case 400:
-        errorMessage = '请求参数错误';
-        break;
-      case 403:
-        errorMessage = '没有权限访问该资源';
-        break;
-      case 404:
-        errorMessage = '请求的资源不存在';
-        break;
-      case 500:
-        errorMessage = '服务器内部错误';
-        break;
-      case 502:
-        errorMessage = '网关错误';
-        break;
-      case 503:
-        errorMessage = '服务暂时不可用';
-        break;
-    }
+      // Construct full URL
+      const fullUrl = `${config.baseURL}${config.url}${
+        config.params ? `?${new URLSearchParams(config.params).toString()}` : ''
+      }`;
 
-    const customError = new Error(errorMessage);
-    (customError as any).status = error.response?.status;
-    (customError as any).data = error.response?.data;
-    
-    return Promise.reject(customError);
+      // Log request details
+      console.log('\n🌐 API Request:', {
+        method: config.method?.toUpperCase(),
+        url: fullUrl,
+        ...(config.data && { body: config.data }),
+        ...(config.params && { params: config.params })
+      });
+
+      return config;
+    } catch (error) {
+      console.error('❌ Token retrieval error:', error);
+      return Promise.reject(error);
+    }
+  },
+  (error: unknown) => {
+    console.log('❌ Request Error:', error);
+    return Promise.reject(error);
   }
 );
 
-// 基础API方法封装
-const api = {
-  // 基础HTTP方法（需要认证）
-  get: <T>(url: string, config?: any): Promise<T> => {
-    return apiClient.get(url, config).then(response => response.data);
+// Response interceptor for API calls
+api.interceptors.response.use(
+  (response) => {
+    // Log successful response
+    console.log('\n✅ API Response:', {
+      status: response.status,
+      data: response.data
+    });
+    return response;
   },
+  async (error) => {
+    // Log error response
+    console.log('\n❌ API Error:', {
+      url: error.config?.baseURL + error.config?.url,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message
+    });
+    
+    const originalRequest = error.config;
 
-  post: <T>(url: string, data?: any, config?: any): Promise<T> => {
-    return apiClient.post(url, data, config).then(response => response.data);
-  },
+    // If the error status is 401 and there is no originalRequest._retry flag,
+    // it means the token has expired and we need to refresh it
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
 
-  put: <T>(url: string, data?: any, config?: any): Promise<T> => {
-    return apiClient.put(url, data, config).then(response => response.data);
-  },
+      try {
+        // Get refresh token from storage
+        const refreshToken = await AsyncStorage.getItem('refreshToken');
+        console.log('🔄 RefreshTokenFromApiAsync - Using refresh token:', {
+          refreshToken: refreshToken?.substring(0, 10) + '...' || 'N/A',
+          timestamp: new Date().toISOString()
+        });
 
-  delete: <T>(url: string, config?: any): Promise<T> => {
-    return apiClient.delete(url, config).then(response => response.data);
-  },
+        // Make GET request with refresh token as query parameter
+        const response = await axios.get(
+          `${Consts.Config.BaseUrl}/services/app/EndCustomer/Token`, {
+            params: { refreshToken },
+            headers: { 'Content-Type': 'application/json' }
+          }
+        );
+        
+        // Extract token from response (matching C# implementation)
+        const newToken = response.data?.result;
+        console.log('🔄 RefreshTokenFromApiAsync - Response:', {
+          success: !!newToken,
+          tokenLength: newToken?.length || 0,
+          timestamp: new Date().toISOString()
+        });
 
-  patch: <T>(url: string, data?: any, config?: any): Promise<T> => {
-    return apiClient.patch(url, data, config).then(response => response.data);
-  },
+        if (!newToken) {
+          throw new Error('Received empty token from refresh endpoint');
+        }
 
-  // 公开请求（不需要认证）- 用于登录等公开接口
-  getPublic: <T>(url: string, config?: any): Promise<T> => {
-    const publicConfig = {
-      ...config,
-      headers: {
-        ...config?.headers,
-        Authorization: undefined
+        // Store the new token (equivalent to AuthService.I.UserProfile.Token = result)
+        await AsyncStorage.setItem('authToken', newToken);
+        console.log('🔄 RefreshTokenFromApiAsync - Updated token in storage');
+
+        // Update the Authorization header
+        axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
+
+        // Return for retry
+        return api(originalRequest);
+
+      } catch (err) {
+        const error = err as Error;
+        console.error('🔐 RefreshTokenFromApiAsync - Error:', error.message);
+        
+        try {
+          // Use AuthService for proper cleanup
+          console.log('🔄 Calling AuthService.logout()...');
+          
+          // Call logout
+          await AuthService.logout();
+          
+          console.log('✅ Logout completed successfully');
+
+          // Emit auth failure event
+          loginEvents.emit('authFailure', {
+            reason: 'token_refresh_failed',
+            error: error.message,
+            timestamp: new Date().toISOString()
+          });
+
+          // Redirect to login
+          console.log('🔄 Redirecting to login page...');
+          router.replace('/User/login');
+        } catch (logoutError) {
+          console.error('❌ Error during logout process:', logoutError);
+          
+          // Emergency cleanup if logout fails
+          try {
+            console.log('🔄 Attempting emergency cleanup...');
+            await AsyncStorage.multiRemove([
+              'authToken', 
+              'refreshToken',
+              'isLoggedIn',
+              'tokenExpiration',
+              'refreshTokenExpiration',
+              'userLoginName'
+            ]);
+
+            // Emit auth failure event for emergency cleanup
+            loginEvents.emit('authFailure', {
+              reason: 'token_refresh_failed_emergency',
+              error: error.message,
+              timestamp: new Date().toISOString()
+            });
+
+            router.replace('/User/login');
+          } catch (emergencyError) {
+            console.error('❌ Emergency cleanup failed:', emergencyError);
+          }
+        }
+
+        // Always propagate the original error
+        return Promise.reject(error);
       }
-    };
-    return apiClient.get(url, publicConfig).then(response => response.data);
-  },
+    }
 
-  postPublic: <T>(url: string, data?: any, config?: any): Promise<T> => {
-    const publicConfig = {
-      ...config,
-      headers: {
-        ...config?.headers,
-        Authorization: undefined
+    return Promise.reject(error);
+  }
+);
+
+// Debug utility to print all AsyncStorage contents
+export const printAsyncStorageContent = async () => {
+  try {
+    console.log('\n📦 AsyncStorage Contents:');
+    console.log('------------------------');
+    
+    // Get all keys
+    const keys = await AsyncStorage.getAllKeys();
+    
+    if (keys.length === 0) {
+      console.log('AsyncStorage is empty');
+      return;
+    }
+
+    // Get all items
+    const items = await AsyncStorage.multiGet(keys);
+    
+    // Print each item with formatting
+    items.forEach(([key, value]) => {
+      let displayValue = value;
+      
+      // If the value looks like a token (long string), truncate it
+      if (value && value.length > 50) {
+        displayValue = value.substring(0, 47) + '...';
       }
-    };
-    return apiClient.post(url, data, publicConfig).then(response => response.data);
-  },
-
-  // Token管理方法
-  setToken: async (token: string): Promise<void> => {
-    await AsyncStorage.setItem('authToken', token);
-    await AsyncStorage.setItem('isLoggedIn', 'true');
-  },
-
-  clearToken: async (): Promise<void> => {
-    await AsyncStorage.multiRemove(['authToken', 'isLoggedIn', 'refreshToken']);
-  },
-
-  getToken: async (): Promise<string | null> => {
-    return await AsyncStorage.getItem('authToken');
-  },
-
-  isLoggedIn: async (): Promise<boolean> => {
-    const token = await AsyncStorage.getItem('authToken');
-    const isLoggedIn = await AsyncStorage.getItem('isLoggedIn');
-    return !!(token && isLoggedIn === 'true');
+      
+      console.log(`🔑 ${key}:`);
+      console.log(`📄 ${displayValue || 'null'}`);
+      console.log('------------------------');
+    });
+    
+    console.log(`Total items: ${keys.length}`);
+  } catch (error) {
+    console.error('❌ Error printing AsyncStorage contents:', error);
   }
 };
 
-// 导出API实例
-export { api, apiClient };
-
+export default api;

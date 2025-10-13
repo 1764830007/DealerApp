@@ -1,41 +1,32 @@
 {
   "home": {
-    "index": "index",
-    "equipment": "equipment",
-    "setting": "setting",
-    "toBeCompleted": "To be completed",
-    "pendingAssignment": "Pending assignment",
-    "inProgress": "In progress",
-    "pendingDepart": "Pending depart",
-    "noWorkOrder": "You currently have no work orders in progress. Please select a work order to depart.",
-    "applicationWorkOrder": "Work Order Application",
-    "warrantyCard": "Warranty Card",
-    "electronicPhoneBook": "Electronic Phone Book",
-    "servicebook": "Service Book",
-    "deviceManagement": "Device Management",
-    "serviceNotice": "Service Notice",
-    "allOrder": "All Orders",
-    "seeAll": "See All",
-    "productModel": "Product Model",
-    "productSerialNumber": "Product Serial Number",
-    "reportTime": "Report Time",
-    "repariDept": "Repair Dept",
-    "orderRefunded": "Order Refunded"
+    "index": "Homepage",
+    "equipment": "Equipment",
+    "setting": "Setting"
   },
   "changeLocale": "change language",
   "setting": {
-    "phone": "PhoneNumber",
-    "email": "EmailAddress",
+    "personInfo": "Personal Info",
+    "email": "Email",
     "deepcolor": "Dark Mode",
     "lightcolor": "Light Mode",
-    "system": "System",
+    "system": "System Default",
     "logout": "Logout",
     "PrivacyNotice": "Privacy Notice",
     "contractUs": "Contact Us",
     "about": "About"
   },
   "equipment": {
-    "equipment": "equipment",
-    "management": "equipment management"
+    "management": "Equipment Management",
+    "list": "Equipment List",
+    "statisticReport": "Equipment Statistic Report",
+    "faultAlert": "Equipment Fault Alert",
+    "fence": "Fence",
+     "bindlist": "Bind Request List",
+    "createBind": "Create Bind Request",
+    "count": "设备数",
+    "online": "在线数",
+    "offline": "离线",
+    "detail": "Equipment Detail"
   }
 }

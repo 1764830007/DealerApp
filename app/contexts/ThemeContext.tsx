@@ -29,6 +29,7 @@ const customDarkTheme = {
     surfaceVariant: '#1E1E1E',
     onSurface: '#FFFFFF',
     onBackground: '#FFFFFF',
+    secondaryContainer: '#fff',
     elevation: {
       level0: 'transparent',
       level1: '#2D2D2D',
@@ -54,6 +55,7 @@ const customLightTheme = {
     surfaceVariant: '#F5F5F5',
     onSurface: '#000000',
     onBackground: '#000000',
+    secondaryContainer: '#000',
   },
 };
 

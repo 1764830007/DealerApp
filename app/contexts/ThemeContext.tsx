@@ -50,7 +50,7 @@ const customLightTheme = {
     tipBackground: '#b3b3b3ff',
     card: '#FFFFFF',
     surface: '#FFFFFF',
-    fontColor: '#ffffffff',
+    fontColor: '#000000ff',
     surfaceVariant: '#F5F5F5',
     onSurface: '#000000',
     onBackground: '#000000',

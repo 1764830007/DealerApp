@@ -1,4 +1,3 @@
-import axios from 'axios';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
@@ -20,6 +19,7 @@ import {
   useTheme
 } from 'react-native-paper';
 import { useLocalization } from '../../hooks/locales/LanguageContext';
+import { api } from '../services/api';
 
 // 前端工单接口定义
 interface WorkOrder {
@@ -36,92 +36,124 @@ const Index = () => {
   const { t } = useLocalization();
   const theme = useTheme();
   const router = useRouter();
+  // 原有状态变量不变...
   const [workOrders, setWorkOrders] = useState<WorkOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
-  // API配置
-  const API_URL = 'https://dcpqa.semdcp.com/api/services/app/WorkOrderService/GetWorkOrdersByParameters';
-  const TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjEzNiIsImh0dHA6Ly9zY2hlbWFzLnhtbHNvYXAub3JnL3dzLzIwMDUvMDUvaWRlbnRpdHkvY2xhaW1zL25hbWUiOiJDUUxfSmVyZW15bWFvIiwiaHR0cDovL3NjaGVtYXMueG1sc29hcC5vcmcvd3MvMjAwNS8wNS9pZGVudGl0eS9jbGFpbXMvZW1haWxhZGRyZXNzIjoieGluX21hb0AxNjMuY29tIiwiQXNwTmV0LklkZW50aXR5LlNlY3VyaXR5U3RhbXAiOiIzNDQ4ZWFiMS0zYWNkLTNiZDgtZDU0Yi0zOWZhMjUxYjYyMGMiLCJzdWIiOiIxMzYiLCJqdGkiOiI4MDBiMTVlZC04Y2Y2LTQ4YTEtOTA2Zi1mZjlmYmQ2NjEzYjYiLCJpYXQiOjE3NjAxNTYzMTUsIlNlc3Npb24uTWFpbkRlYWxlckNvZGUiOiJZMTRBIiwibmJmIjoxNzYwMTU2MzE1LCJleHAiOjE3NjAyNDI3MTUsImlzcyI6IkRDUCIsImF1ZCI6IkRDUCJ9.aSRHT3pXzj83IY8nAGOGg9uFcPnn45kD8HmdYmXfjtQ';
+  // 1. 新增：三类工单数量状态 + 待完成总数
+  const [pendingAssignmentCount, setPendingAssignmentCount] = useState(0); // 待分配（segStatusIds=1）
+  const [pendingDepartCount, setPendingDepartCount] = useState(0);        // 待出发（segStatusIds=3）
+  const [inProgressCount, setInProgressCount] = useState(0);             // 进行中（segStatusIds=4）
+  const [totalPendingCount, setTotalPendingCount] = useState(0);         // 待完成总数（三者之和）
 
-  // 获取工单数据
+  // 2. 新增：通用函数 - 根据segStatusIds获取orderSegNo数量（核心统计逻辑）
+  const fetchOrderSegCount = async (segStatusId: number): Promise<number> => {
+    try {
+      const data = await api.post<any>('services/app/WorkOrderService/GetWorkOrdersBySegStatus', {
+        limit: 1000, // 设为较大值，确保获取所有符合条件的数据（避免分页漏数）
+        segStatusIds: [segStatusId], // 单个状态ID（1/3/4）
+        offset: 0,
+        onsiteOrNot: 'Y'
+      });
+      console.log('API响应数据:', data);
+
+      // 验证响应有效性：成功且有result.data，则orderSegNo数量 = data数组长度
+      if (data.success && data.result?.data) {
+        return data.result.data.length;
+      }
+      console.warn(`获取segStatusId=${segStatusId}数据失败，返回0`);
+      return 0;
+    } catch (err: any) {
+      console.error(`获取segStatusId=${segStatusId}错误:`, err.message);
+      return 0;
+    }
+  };
+
+  // 3. 新增：批量获取三类数量并计算总和
+  const fetchAllPendingCounts = async () => {
+    // 并行请求三类状态数据（提高效率，避免串行等待）
+    const [assignCount, departCount, progressCount] = await Promise.all([
+      fetchOrderSegCount(1), // 待分配（segStatusIds=1）
+      fetchOrderSegCount(3), // 待出发（segStatusIds=3）
+      fetchOrderSegCount(4)  // 进行中（segStatusIds=4）
+    ]);
+
+    // 更新状态：单个数量 + 总和
+    setPendingAssignmentCount(assignCount);
+    setPendingDepartCount(departCount);
+    setInProgressCount(progressCount);
+    setTotalPendingCount(assignCount + departCount + progressCount);
+  };
+
+  // 4. 原有fetchWorkOrders函数使用封装API
   const fetchWorkOrders = async () => {
     try {
       setLoading(true);
       setError(null);
-      
-      const response = await axios.post(
-        API_URL,
-        {
-          limit: 2,
-          orderByLastUpdatedTime: true,
-          offset: 0
-        },
-        {
-          headers: {
-            'Authorization': `Bearer ${TOKEN}`,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
+      const data = await api.post<any>('services/app/WorkOrderService/GetWorkOrdersByParameters', {
+        limit: 2,
+        orderByLastUpdatedTime: true,
+        offset: 0
+      });
+      console.log('API响应数据:', data);
 
-      if (response.data.success && response.data.result) {
-        // 转换API数据为前端格式
-        const transformedOrders: WorkOrder[] = response.data.result.data.map((order: any) => ({
+      if (data.success && data.result) {
+        const transformedOrders: WorkOrder[] = data.result.data.map((order: any) => ({
           code: order.workOrderNo,
           status: order.workOrderStatus,
           productModel: order.machineModel,
           serialNumber: order.machineNo,
           reportTime: formatDate(order.reportTime),
           constructionSite: order.constructionLocation || '',
-          maintenanceDept: order.maintenanceDeptName || '',
+          maintenanceDept: order.maintenanceDeptName || ''
         }));
-        
         setWorkOrders(transformedOrders);
       } else {
-        throw new Error(response.data.error || '获取数据失败');
+        throw new Error(data.error || '获取工单列表失败');
       }
     } catch (err: any) {
-      console.error('API调用错误:', err);
+      console.error('获取工单列表错误:', err);
       setError(err.message || '网络请求失败');
-      Alert.alert('错误', '获取工单数据失败，请检查网络连接');
+      Alert.alert('错误', '获取工单数据失败，请检查网络');
     } finally {
       setLoading(false);
     }
   };
 
-  // 格式化日期
-  const formatDate = (dateString: string) => {
-    try {
-      const date = new Date(dateString);
-      return `${date.getFullYear()}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getDate().toString().padStart(2, '0')} ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
-    } catch {
-      return dateString;
-    }
-  };
-
-  // 组件挂载时获取数据
+  // 5. 组件挂载时：同时加载工单列表 + 三类统计数量
   useEffect(() => {
-    fetchWorkOrders();
+    const initData = async () => {
+      await Promise.all([fetchWorkOrders(), fetchAllPendingCounts()]);
+    };
+    initData();
   }, []);
 
-  // 功能按钮点击事件
+  // 日期格式化函数
+  const formatDate = (dateString: string): string => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('zh-CN');
+  };
+
+  // 功能按钮处理函数
   const handleFuncBtnPress = (funcName: string) => {
-    console.log(`${funcName} 按钮被点击`);
+    console.log(`点击了功能按钮: ${funcName}`);
+    // 这里可以添加导航到对应页面的逻辑
+    Alert.alert('提示', `点击了${funcName}功能`);
   };
 
-  // 刷新数据
+  // 刷新处理函数
   const handleRefresh = () => {
-    fetchWorkOrders();
+    setRefreshing(true);
+    Promise.all([fetchWorkOrders(), fetchAllPendingCounts()])
+      .finally(() => setRefreshing(false));
   };
 
-  // 下拉刷新处理函数
+  // 6. 下拉刷新时：同步刷新列表 + 统计数量
   const onRefresh = React.useCallback(() => {
-    setRefreshing(true);
-    fetchWorkOrders().finally(() => {
-      setRefreshing(false);
-    });
+    handleRefresh();
   }, []);
 
   return (
@@ -139,7 +171,7 @@ const Index = () => {
       >
         {/* 顶部公司名称与图标 */}
         <View style={styles.topBar}>
-          <Text style={styles.companyName}>涉县威远机械设备有限公司</Text>
+          <Text style={[styles.companyName, { color: theme.colors.onSurface }]}>涉县威远机械设备有限公司</Text>
           <View style={styles.topIcons}>
             <View style={styles.bellIcon}>
               <Icon source="bell" size={24} />
@@ -149,33 +181,48 @@ const Index = () => {
 
         {/* 待完成统计区 */}
         <View style={[styles.todoStats,{ backgroundColor: theme.colors.surface, shadowColor: theme.dark ? '#000' : '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.3, shadowRadius: 4, elevation: 5 }]}>
-          <View style={{
-            backgroundColor: theme.dark ? '#333333' : '#367cc7ff'
-          }}>
+          <View style={{ backgroundColor: theme.dark ? '#333333' : '#367cc7ff' }}>
             <View style={styles.statsHeader}>
-              <Text style={[styles.statsHeaderText, { color: theme.colors.onSurface }]}>{t('home.toBeCompleted')} (97)</Text>
+              {/* 标题：待完成总数（动态） */}
+              <Text style={[styles.statsHeaderText, { color: theme.colors.onSurface }]}>
+                {t('home.toBeCompleted')} ({totalPendingCount})
+              </Text>
               <Icon source="chevron-right" size={20} color={theme.colors.onSurface} />
             </View>
           </View>
 
           <View style={[styles.statsNumbers, { backgroundColor: theme.colors.surface }]}>
+            {/* 待分配：绑定pendingAssignmentCount（segStatusIds=1） */}
             <View style={styles.statItem}>
-              <Text style={[styles.statNumber, { color: theme.colors.onSurface }]}>95</Text>
+              <Text style={[styles.statNumber, { color: theme.colors.onSurface }]}>{pendingAssignmentCount}</Text>
               <Text style={[styles.statLabel, { color: theme.colors.outline }]}>{t('home.pendingAssignment')}</Text>
             </View>
+            {/* 待出发：绑定pendingDepartCount（segStatusIds=3） */}
             <View style={styles.statItem}>
-              <Text style={[styles.statNumber, { color: theme.colors.onSurface }]}>2</Text>
+              <Text style={[styles.statNumber, { color: theme.colors.onSurface }]}>{pendingDepartCount}</Text>
               <Text style={[styles.statLabel, { color: theme.colors.outline }]}>{t('home.pendingDepart')}</Text>
             </View>
+            {/* 进行中：绑定inProgressCount（segStatusIds=4） */}
             <View style={styles.statItem}>
-              <Text style={[styles.statNumber, { color: theme.colors.onSurface }]}>0</Text>
+              <Text style={[styles.statNumber, { color: theme.colors.onSurface }]}>{inProgressCount}</Text>
               <Text style={[styles.statLabel, { color: theme.colors.outline }]}>{t('home.inProgress')}</Text>
             </View>
           </View>
-          <View style={[styles.statItem, { backgroundColor: theme.colors.primary,margin: 12, borderRadius: 8, padding: 8 }]}>
-            <Text style={[styles.statsTipText, { color: '#fff' }]}>
-              {t('home.noWorkOrder')}
-            </Text>
+          <View style={[{ backgroundColor: theme.colors.primary,margin: 12, borderRadius: 8, padding: 8 }]}>
+            {workOrders.length > 0 ? (
+              <View style={styles.firstWorkOrderInfo}>
+                <Text style={[styles.statsTipText, { color: '#fff', fontWeight: 'bold' }]}>
+                  派单工号: {workOrders[0].code}
+                </Text>
+                <Text style={[styles.statsTipText, { color: '#fff', marginTop: 4 }]}>
+                   {workOrders[0].status}
+                </Text>
+              </View>
+            ) : (
+              <Text style={[styles.statsTipText, { color: '#fff', textAlign: 'center' }]}>
+                {t('home.noWorkOrder')}
+              </Text>
+            )}
           </View>
         </View>
 
@@ -339,6 +386,9 @@ const styles = StyleSheet.create({
   },
   statsTipText: {
     fontSize: 14,
+  },
+  firstWorkOrderInfo: {
+    alignItems: 'flex-start',
   },
   funcButtons: {
     flexDirection: 'row',

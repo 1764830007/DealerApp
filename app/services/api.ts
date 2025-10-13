@@ -17,11 +17,20 @@ const apiClient: AxiosInstance = axios.create({
 // Token获取函数
 const acquireToken = async (): Promise<string> => {
   try {
-    const token = await AsyncStorage.getItem('authToken');
-    if (!token) {
-      throw new Error('No token found');
+    // 暂时硬编码token
+    const hardcodedToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjEwNzkiLCJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoiRjhLTV9saXl1ZXllIiwiaHR0cDovL3NjaGVtYXMueG1sc29hcC5vcmcvd3MvMjAwNS8wNS9pZGVudGl0eS9jbGFpbXMvZW1haWxhZGRyZXNzIjoibGl5dWV5ZTIwMDZAMTYzLmNvbSIsIkFzcE5ldC5JZGVudGl0eS5TZWN1cml0eVN0YW1wIjoiMzQ0OGVhYjEtM2FjZC0zYmQ4LWQ1NGItMzlmYTI1MWI2MjBjIiwic3ViIjoiMTA3OSIsImp0aSI6IjllODJhYWI4LTdkYjItNDdhNy05OGQ2LWEwZGZiNTQ5Y2M4YiIsImlhdCI6MTc2MDMyMjcxOSwiU2Vzc2lvbi5NYWluRGVhbGVyQ29kZSI6IkY4S00iLCJuYmYiOjE3NjAzMjI3MTksImV4cCI6MTc2MDQwOTExOSwiaXNzIjoiRENQIiwiYXVkIjoiRENQIn0.FZ2wu1qOTAzaPnP9thYJvB-AvgOvk3Og7SLKe8d6mbA';
+    
+    // 先尝试从AsyncStorage获取，如果没有则使用硬编码token
+    const storedToken = await AsyncStorage.getItem('authToken');
+    if (storedToken) {
+      return storedToken;
     }
-    return token;
+    
+    // 如果没有存储的token，使用硬编码token并存储
+    await AsyncStorage.setItem('authToken', hardcodedToken);
+    await AsyncStorage.setItem('isLoggedIn', 'true');
+    
+    return hardcodedToken;
   } catch (error) {
     console.error('Token获取失败:', error);
     // 可以在这里添加导航到登录页面的逻辑

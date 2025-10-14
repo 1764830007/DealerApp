@@ -46,11 +46,13 @@ const Index = () => {
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
-  // 1. 新增：三类工单数量状态 + 待完成总数
+  // 1. 新增：三类工单数量状态 + 待完成总数 + 最新工单状态
   const [pendingAssignmentCount, setPendingAssignmentCount] = useState(0); // 待分配（segStatusIds=1）
   const [pendingDepartCount, setPendingDepartCount] = useState(0);        // 待出发（segStatusIds=3）
   const [inProgressCount, setInProgressCount] = useState(0);             // 进行中（segStatusIds=4）
   const [totalPendingCount, setTotalPendingCount] = useState(0);         // 待完成总数（三者之和）
+  const [latestWorkOrder, setLatestWorkOrder] = useState<WorkOrder | null>(null); // 最新工单
+  const [hasExecutingPermission, setHasExecutingPermission] = useState(false); // 是否有执行权限
 
   // 2. 新增：根据权限级别获取待派工数量的API参数配置
   const getPendingAssignmentParams = (): any => {
@@ -465,7 +467,53 @@ const Index = () => {
     }
   };
 
-  // 8. 新增：批量获取三类数量并计算总和
+  // 8. 新增：获取最新工单的函数
+  const fetchLatestWorkOrder = async () => {
+    try {
+      // 检查是否有执行权限（权限3,5,6,7）
+      const hasExecutePermission = [3, 5, 6, 7].includes(PERMISSION_LEVEL);
+      setHasExecutingPermission(hasExecutePermission);
+      
+      if (!hasExecutePermission) {
+        setLatestWorkOrder(null);
+        return;
+      }
+
+      // 调用执行中工单的API
+      const requestParams = {
+        limit: 2,
+        offset: 0,
+        segStatusIds: [4, 5, 6, 8],  // 执行中状态ID
+        onsiteOrNot: 'Y',
+        workOrderNoOrMachineNo: null
+      };
+      
+      const data = await api.post<any>('services/app/WorkOrderService/GetWorkOrdersBySegStatus', requestParams);
+      console.log('获取最新工单的API响应数据:', data);
+
+      // 验证响应有效性：成功且有result.data，则取第一条作为最新工单
+      if (data.success && data.result?.data && data.result.data.length > 0) {
+        const firstOrder = data.result.data[0];
+        const latestOrder: WorkOrder = {
+          code: firstOrder.workOrderNo || firstOrder.myWorkOrderSegNo || '',
+          status: firstOrder.workOrderStatusName || '',
+          productModel: firstOrder.machineModel || '',
+          serialNumber: firstOrder.machineNo || '',
+          reportTime: formatDate(firstOrder.reportTime),
+          constructionSite: firstOrder.constructionLocation || '',
+          maintenanceDept: firstOrder.maintenanceDeptName || ''
+        };
+        setLatestWorkOrder(latestOrder);
+      } else {
+        setLatestWorkOrder(null);
+      }
+    } catch (err: any) {
+      console.error('获取最新工单错误:', err.message);
+      setLatestWorkOrder(null);
+    }
+  };
+
+  // 9. 新增：批量获取三类数量并计算总和 + 最新工单
   const fetchAllPendingCounts = async () => {
     // 并行请求三类状态数据（提高效率，避免串行等待）
     const [assignCount, departCount, progressCount] = await Promise.all([
@@ -479,6 +527,9 @@ const Index = () => {
     setPendingDepartCount(departCount);
     setInProgressCount(progressCount);
     setTotalPendingCount(assignCount + departCount + progressCount);
+    
+    // 获取最新工单
+    await fetchLatestWorkOrder();
   };
 
   // 4. 原有fetchWorkOrders函数使用封装API
@@ -617,22 +668,25 @@ const Index = () => {
               <Text style={[styles.statLabel, { color: theme.colors.outline }]}>{t('home.inProgress')}</Text>
             </View>
           </View>
-          <View style={[{ backgroundColor: theme.colors.primary,margin: 12, borderRadius: 8, padding: 8 }]}>
-            {workOrders.length > 0 ? (
-              <View style={styles.firstWorkOrderInfo}>
-                <Text style={[styles.statsTipText, { color: '#fff', fontWeight: 'bold' }]}>
-                  派单工号: {workOrders[0].code}
+          {/* 最新工单提示区域 - 根据执行权限显示不同内容 */}
+          {hasExecutingPermission && (
+            <View style={[{ backgroundColor: theme.colors.primary, margin: 12, borderRadius: 8, padding: 8 }]}>
+              {latestWorkOrder ? (
+                <View style={styles.firstWorkOrderInfo}>
+                  <Text style={[styles.statsTipText, { color: '#fff', fontWeight: 'bold' }]}>
+                    派单工号: {latestWorkOrder.code}
+                  </Text>
+                  <Text style={[styles.statsTipText, { color: '#fff', marginTop: 4 }]}>
+                    {latestWorkOrder.status}
+                  </Text>
+                </View>
+              ) : (
+                <Text style={[styles.statsTipText, { color: '#fff', textAlign: 'center' }]}>
+                  您目前没有在执行中的工单，请选择待出发的工单进行出工
                 </Text>
-                <Text style={[styles.statsTipText, { color: '#fff', marginTop: 4 }]}>
-                   {workOrders[0].status}
-                </Text>
-              </View>
-            ) : (
-              <Text style={[styles.statsTipText, { color: '#fff', textAlign: 'center' }]}>
-                {t('home.noWorkOrder')}
-              </Text>
-            )}
-          </View>
+              )}
+            </View>
+          )}
         </View>
 
         {/* 功能按钮区 */}

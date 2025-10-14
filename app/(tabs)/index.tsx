@@ -46,13 +46,15 @@ const Index = () => {
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
-  // 1. 新增：三类工单数量状态 + 待完成总数 + 最新工单状态
+  // 1. 新增：三类工单数量状态 + 待完成总数 + 最新工单状态 + 全部工单状态
   const [pendingAssignmentCount, setPendingAssignmentCount] = useState(0); // 待分配（segStatusIds=1）
   const [pendingDepartCount, setPendingDepartCount] = useState(0);        // 待出发（segStatusIds=3）
   const [inProgressCount, setInProgressCount] = useState(0);             // 进行中（segStatusIds=4）
   const [totalPendingCount, setTotalPendingCount] = useState(0);         // 待完成总数（三者之和）
   const [latestWorkOrder, setLatestWorkOrder] = useState<WorkOrder | null>(null); // 最新工单
   const [hasExecutingPermission, setHasExecutingPermission] = useState(false); // 是否有执行权限
+  const [workOrderTitle, setWorkOrderTitle] = useState('全部工单'); // 工单区域标题
+  const [hasCreateOrAssignPermission, setHasCreateOrAssignPermission] = useState(false); // 是否有申请或派工权限
 
   // 2. 新增：根据权限级别获取待派工数量的API参数配置
   const getPendingAssignmentParams = (): any => {
@@ -513,8 +515,29 @@ const Index = () => {
     }
   };
 
-  // 9. 新增：批量获取三类数量并计算总和 + 最新工单
+  // 9. 新增：更新权限相关状态
+  const updateUserPermissions = () => {
+    // 检查是否有申请或派工权限（权限1,2,4,5,6,7）
+    const hasCreateOrAssign = [1, 2, 4, 5, 6, 7].includes(PERMISSION_LEVEL);
+    setHasCreateOrAssignPermission(hasCreateOrAssign);
+    
+    // 根据权限设置工单标题
+    if (PERMISSION_LEVEL === 1) {
+      setWorkOrderTitle('我的报修');
+    } else if ([2, 4, 5, 6, 7].includes(PERMISSION_LEVEL)) {
+      setWorkOrderTitle('全部工单');
+    } else if (PERMISSION_LEVEL === 3) {
+      setWorkOrderTitle('我的工单');
+    } else {
+      setWorkOrderTitle('全部工单');
+    }
+  };
+
+  // 10. 新增：批量获取三类数量并计算总和 + 最新工单 + 权限更新
   const fetchAllPendingCounts = async () => {
+    // 更新权限状态
+    updateUserPermissions();
+    
     // 并行请求三类状态数据（提高效率，避免串行等待）
     const [assignCount, departCount, progressCount] = await Promise.all([
       fetchOrderSegCount(1), // 待分配（segStatusIds=1）
@@ -735,73 +758,87 @@ const Index = () => {
           </TouchableOpacity>
         </View>
 
-        {/* 全部工单区 */}
-        <View style={styles.allWorkOrders}>
-          <View style={styles.workOrdersHeader}>
-            <Text style={styles.workOrdersHeaderText}>{t('home.allOrder')}</Text>
-            <TouchableOpacity onPress={handleRefresh}>
-              <View style={styles.viewAll}>
-                <Text style={styles.viewAllText}>{t('home.seeAll')}</Text>
-                
-              </View>
-            </TouchableOpacity>
-          </View>
-
-          {loading ? (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" />
-              <Text style={styles.loadingText}>加载中...</Text>
-            </View>
-          ) : error ? (
-            <View style={styles.errorContainer}>
-              <Icon source="alert-circle" size={48} />
-              <Text style={styles.errorText}>{error}</Text>
-              <Button mode="contained" onPress={handleRefresh}>
-                重试
-              </Button>
-            </View>
-          ) : workOrders.length === 0 ? (
-            <View style={styles.emptyContainer}>
-              <Icon source="file-remove" size={48} />
-              <Text style={styles.emptyText}>暂无工单数据</Text>
-            </View>
-          ) : (
-            workOrders.map((order) => (
-              <Card key={order.code} style={styles.workOrderCard}>
-                <View style={styles.cardContent}>
-                  <View style={styles.workOrderHeader}>
-                    <Icon source="swap-vertical" size={20} />
-                    <Text style={styles.workOrderCode}>{order.code}</Text>
-                    <Button mode="outlined" style={styles.workOrderStatusBtn}>
-                      {order.status}
-                    </Button>
-                  </View>
-                  <View style={styles.workOrderInfo}>
-                    <Paragraph style={styles.workOrderInfoItem}>
-                      {t('home.productModel')} {order.productModel}
-                    </Paragraph>
-                    <Paragraph style={styles.workOrderInfoItem}>
-                      {t('home.productSerialNumber')} {order.serialNumber}
-                    </Paragraph>
-                    <Paragraph style={styles.workOrderInfoItem}>
-                      {t('home.reportTime')} {order.reportTime}
-                    </Paragraph>
-                    {order.constructionSite && (
-                      <Paragraph style={styles.workOrderInfoItem}>
-                        施工地点： {order.constructionSite}
-                      </Paragraph>
-                    )}
-                    {order.maintenanceDept && (
-                      <Paragraph style={styles.workOrderInfoItem}>
-                        {t('home.repariDept')} {order.maintenanceDept}
-                      </Paragraph>
-                    )}
-                  </View>
+        {/* 全部工单区 - 根据权限显示不同内容 */}
+        {hasCreateOrAssignPermission && (
+          <View style={styles.allWorkOrders}>
+            <View style={styles.workOrdersHeader}>
+              <Text style={styles.workOrdersHeaderText}>{workOrderTitle}</Text>
+              <TouchableOpacity onPress={() => {
+                // 根据权限跳转到不同页面
+                if (PERMISSION_LEVEL === 1) {
+                  // 只有申请权限：跳转到我的报修列表
+                  Alert.alert('提示', '跳转到我的报修列表');
+                } else if ([2, 4, 5, 6, 7].includes(PERMISSION_LEVEL)) {
+                  // 有派工权限：跳转到全部工单页面
+                  Alert.alert('提示', '跳转到全部工单页面');
+                } else if (PERMISSION_LEVEL === 3) {
+                  // 只有执行权限：跳转到我的工单页面
+                  Alert.alert('提示', '跳转到我的工单页面');
+                }
+              }}>
+                <View style={styles.viewAll}>
+                  <Text style={styles.viewAllText}>{t('home.seeAll')}</Text>
+                  
                 </View>
-              </Card>
-            ))
-          )}
-        </View>
+              </TouchableOpacity>
+            </View>
+
+            {loading ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" />
+                <Text style={styles.loadingText}>加载中...</Text>
+              </View>
+            ) : error ? (
+              <View style={styles.errorContainer}>
+                <Icon source="alert-circle" size={48} />
+                <Text style={styles.errorText}>{error}</Text>
+                <Button mode="contained" onPress={handleRefresh}>
+                  重试
+                </Button>
+              </View>
+            ) : workOrders.length === 0 ? (
+              <View style={styles.emptyContainer}>
+                <Icon source="file-remove" size={48} />
+                <Text style={styles.emptyText}>暂无工单数据</Text>
+              </View>
+            ) : (
+              workOrders.map((order) => (
+                <Card key={order.code} style={styles.workOrderCard}>
+                  <View style={styles.cardContent}>
+                    <View style={styles.workOrderHeader}>
+                      <Icon source="swap-vertical" size={20} />
+                      <Text style={styles.workOrderCode}>{order.code}</Text>
+                      <Button mode="outlined" style={styles.workOrderStatusBtn}>
+                        {order.status}
+                      </Button>
+                    </View>
+                    <View style={styles.workOrderInfo}>
+                      <Paragraph style={styles.workOrderInfoItem}>
+                        {t('home.productModel')}： {order.productModel}
+                      </Paragraph>
+                      <Paragraph style={styles.workOrderInfoItem}>
+                        {t('home.productSerialNumber')}： {order.serialNumber}
+                      </Paragraph>
+                      <Paragraph style={styles.workOrderInfoItem}>
+                        {t('home.reportTime')}： {order.reportTime}
+                      </Paragraph>
+                      
+                        <Paragraph style={styles.workOrderInfoItem}>
+                          施工地点： {order.constructionSite}
+                        </Paragraph>
+                     
+                     
+                        <Paragraph style={styles.workOrderInfoItem}>
+                          {t('home.repariDept')}： {order.maintenanceDept}
+                        </Paragraph>
+                     
+                    </View>
+                  </View>
+                </Card>
+              ))
+            )}
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );

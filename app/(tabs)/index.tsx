@@ -36,6 +36,10 @@ const Index = () => {
   const { t } = useLocalization();
   const theme = useTheme();
   const router = useRouter();
+  
+  // 固定权限变量：1=申请权限，2=派工权限，3=执行权限，4=申请+派工权限，5=申请+执行权限，6=派工+执行权限，7=申请+派工+执行权限
+  const [PERMISSION_LEVEL, setPermissionLevel] = useState<number>(6); // 这里可以修改为需要的权限值
+  
   // 原有状态变量不变...
   const [workOrders, setWorkOrders] = useState<WorkOrder[]>([]);
   const [loading, setLoading] = useState(true);
@@ -48,20 +52,264 @@ const Index = () => {
   const [inProgressCount, setInProgressCount] = useState(0);             // 进行中（segStatusIds=4）
   const [totalPendingCount, setTotalPendingCount] = useState(0);         // 待完成总数（三者之和）
 
-  // 2. 新增：通用函数 - 根据segStatusIds获取orderSegNo数量（核心统计逻辑）
+  // 2. 新增：根据权限级别获取待派工数量的API参数配置
+  const getPendingAssignmentParams = (): any => {
+    const currentUser = 'philistest'; // 当前用户名，可以从token中获取
+    
+    switch (PERMISSION_LEVEL) {
+      // 1. 申请权限 (只有WorkOrderCreate权限)
+      case 1:
+        return {
+          limit: 2,
+          offset: 0,
+          createByUser: currentUser,
+          workOrderNoOrMachineNo: null,
+          workOrderSource: "代理提报",
+          onsiteOrNot: null,
+          status: [1],
+          type: null,
+          dealer: null,
+          orderByLastUpdatedTime: true,
+          department: null
+        };
+      
+      // 2. 派工权限 (只有WorkOrderAssign权限)
+      case 2:
+        return {
+          limit: 2,
+          offset: 0,
+          createByUser: null,
+          workOrderNoOrMachineNo: null,
+          workOrderSource: null,
+          onsiteOrNot: null,
+          status: [1],
+          type: null,
+          dealer: null,
+          orderByLastUpdatedTime: false,
+          department: null
+        };
+      
+      // 3. 执行权限 (只有WorkOrderExecute权限)
+      case 3:
+        return {
+          limit: 2,
+          offset: 0,
+          createByUser: null,
+          workOrderNoOrMachineNo: null,
+          workOrderSource: null,
+          onsiteOrNot: null,
+          status: [1],
+          type: null,
+          dealer: null,
+          orderByLastUpdatedTime: false,
+          department: null
+        };
+      
+      // 4. 申请+派工权限 (WorkOrderCreate + WorkOrderAssign)
+      case 4:
+        return {
+          limit: 2,
+          offset: 0,
+          createByUser: null,
+          workOrderNoOrMachineNo: null,
+          workOrderSource: null,
+          onsiteOrNot: null,
+          status: [1],
+          type: null,
+          dealer: null,
+          orderByLastUpdatedTime: false,
+          department: null
+        };
+      
+      // 5. 申请+执行权限 (WorkOrderCreate + WorkOrderExecute)
+      case 5:
+        return {
+          limit: 2,
+          offset: 0,
+          createByUser: currentUser,
+          workOrderNoOrMachineNo: null,
+          workOrderSource: "代理提报",
+          onsiteOrNot: null,
+          status: [1],
+          type: null,
+          dealer: null,
+          orderByLastUpdatedTime: false,
+          department: null
+        };
+      
+      // 6. 派工+执行权限 (WorkOrderAssign + WorkOrderExecute)
+      case 6:
+        return {
+          limit: 2,
+          offset: 0,
+          createByUser: null,
+          workOrderNoOrMachineNo: null,
+          workOrderSource: null,
+          onsiteOrNot: null,
+          status: [1],
+          type: null,
+          dealer: null,
+          orderByLastUpdatedTime: false,
+          department: null
+        };
+      
+      // 7. 申请+派工+执行权限 (所有权限)
+      case 7:
+        return {
+          limit: 2,
+          offset: 0,
+          createByUser: null,
+          workOrderNoOrMachineNo: null,
+          workOrderSource: null,
+          onsiteOrNot: null,
+          status: [1],
+          type: null,
+          dealer: null,
+          orderByLastUpdatedTime: false,
+          department: null
+        };
+      
+      // 默认使用派工权限的参数
+      default:
+        return {
+          limit: 1000,
+          offset: 0,
+          createByUser: null,
+          workOrderNoOrMachineNo: null,
+          workOrderSource: null,
+          onsiteOrNot: null,
+          status: [1],
+          type: null,
+          dealer: null,
+          orderByLastUpdatedTime: false,
+          department: null
+        };
+    }
+  };
+
+  // 3. 新增：根据权限级别获取待出发数量的API参数配置
+  const getPendingDepartParams = (): any => {
+    const currentUser = 'F8KM_liyueye'; // 当前用户名，可以从token中获取
+    
+    switch (PERMISSION_LEVEL) {
+      // 1. 申请权限 (只有WorkOrderCreate权限)
+      case 1:
+        return {
+          limit: 2,
+          offset: 0,
+          segStatusIds: [3],  // 待出发状态ID
+          onsiteOrNot: 'Y',
+          workOrderNoOrMachineNo: null
+        };
+      
+      // 2. 派工权限 (只有WorkOrderAssign权限)
+      case 2:
+        return {
+          limit: 2,
+          offset: 0,
+          createByUser: null,
+          workOrderNoOrMachineNo: null,
+          workOrderSource: null,
+          onsiteOrNot: null,
+          status: [3],  // 待出发状态ID
+          type: null,
+          dealer: null,
+          orderByLastUpdatedTime: false,
+          department: null
+        };
+      
+      // 3. 执行权限 (只有WorkOrderExecute权限)
+      case 3:
+        return {
+          limit: 2,
+          offset: 0,
+          segStatusIds: [3],  // 待出发状态ID
+          onsiteOrNot: 'Y',
+          workOrderNoOrMachineNo: null
+        };
+      
+      // 4. 申请+派工权限 (WorkOrderCreate + WorkOrderAssign)
+      case 4:
+        return {
+          limit: 2,
+          offset: 0,
+          createByUser: null,
+          workOrderNoOrMachineNo: null,
+          workOrderSource: null,
+          onsiteOrNot: null,
+          status: [3],  // 待出发状态ID
+          type: null,
+          dealer: null,
+          orderByLastUpdatedTime: false,
+          department: null
+        };
+      
+      // 5. 申请+执行权限 (WorkOrderCreate + WorkOrderExecute)
+      case 5:
+        return {
+          limit: 2,
+          offset: 0,
+          segStatusIds: [3],  // 待出发状态ID
+          onsiteOrNot: 'Y',
+          workOrderNoOrMachineNo: null
+        };
+      
+      // 6. 派工+执行权限 (WorkOrderAssign + WorkOrderExecute)
+      case 6:
+        return {
+          limit: 2,
+          offset: 0,
+          segStatusIds: [3],  // 待出发状态ID
+          onsiteOrNot: 'Y',
+          workOrderNoOrMachineNo: null
+        };
+      
+      // 7. 申请+派工+执行权限 (所有权限)
+      case 7:
+        return {
+          limit: 2,
+          offset: 0,
+          segStatusIds: [3],  // 待出发状态ID
+          onsiteOrNot: 'Y',
+          workOrderNoOrMachineNo: null
+        };
+      
+      // 默认使用执行权限的参数
+      default:
+        return {
+          limit: 1000,
+          offset: 0,
+          segStatusIds: [3],  // 待出发状态ID
+          onsiteOrNot: 'Y',
+          workOrderNoOrMachineNo: null
+        };
+    }
+  };
+
+  // 4. 新增：通用函数 - 根据segStatusIds获取orderSegNo数量（核心统计逻辑）
   const fetchOrderSegCount = async (segStatusId: number): Promise<number> => {
     try {
-      const data = await api.post<any>('services/app/WorkOrderService/GetWorkOrdersBySegStatus', {
-        limit: 1000, // 设为较大值，确保获取所有符合条件的数据（避免分页漏数）
-        segStatusIds: [segStatusId], // 单个状态ID（1/3/4）
-        offset: 0,
-        onsiteOrNot: 'Y'
-      });
-      console.log('API响应数据:', data);
+      let requestParams: any;
+      
+      // 如果是待派工状态（status=1），使用权限相关的参数
+      if (segStatusId === 1) {
+        requestParams = getPendingAssignmentParams();
+      } else {
+        // 其他状态使用通用参数
+        requestParams = {
+          limit: 1000,
+          segStatusIds: [segStatusId],
+          offset: 0,
+          onsiteOrNot: 'Y'
+        };
+      }
+      
+      const data = await api.post<any>('services/app/WorkOrderService/GetWorkOrdersByParameters', requestParams);
+      console.log(`获取segStatusId=${segStatusId}的API响应数据:`, data);
 
       // 验证响应有效性：成功且有result.data，则orderSegNo数量 = data数组长度
       if (data.success && data.result?.data) {
-        return data.result.data.length;
+        return data.result.amount;
       }
       console.warn(`获取segStatusId=${segStatusId}数据失败，返回0`);
       return 0;
@@ -71,12 +319,41 @@ const Index = () => {
     }
   };
 
-  // 3. 新增：批量获取三类数量并计算总和
+  // 5. 新增：单独获取待出发数量的函数
+  const fetchPendingDepartCount = async (): Promise<number> => {
+    try {
+      const requestParams = getPendingDepartParams();
+      let data: any;
+      
+      // 根据权限级别选择不同的API
+      if (PERMISSION_LEVEL === 2 || PERMISSION_LEVEL === 4) {
+        // 派工权限和申请+派工权限使用GetWorkOrdersByParameters API
+        data = await api.post<any>('services/app/WorkOrderService/GetWorkOrdersByParameters', requestParams);
+      } else {
+        // 其他权限使用GetWorkOrdersBySegStatus API
+        data = await api.post<any>('services/app/WorkOrderService/GetWorkOrdersBySegStatus', requestParams);
+      }
+      
+      console.log('获取待出发数量的API响应数据:', data);
+
+      // 验证响应有效性：成功且有result.data，则数量 = data数组长度
+      if (data.success && data.result?.data) {
+        return data.result.amount;
+      }
+      console.warn('获取待出发数量失败，返回0');
+      return 0;
+    } catch (err: any) {
+      console.error('获取待出发数量错误:', err.message);
+      return 0;
+    }
+  };
+
+  // 6. 新增：批量获取三类数量并计算总和
   const fetchAllPendingCounts = async () => {
     // 并行请求三类状态数据（提高效率，避免串行等待）
     const [assignCount, departCount, progressCount] = await Promise.all([
       fetchOrderSegCount(1), // 待分配（segStatusIds=1）
-      fetchOrderSegCount(3), // 待出发（segStatusIds=3）
+      fetchPendingDepartCount(), // 待出发（使用单独的待出发函数）
       fetchOrderSegCount(4)  // 进行中（segStatusIds=4）
     ]);
 
@@ -173,6 +450,21 @@ const Index = () => {
         <View style={styles.topBar}>
           <Text style={[styles.companyName, { color: theme.colors.onSurface }]}>涉县威远机械设备有限公司</Text>
           <View style={styles.topIcons}>
+            <TouchableOpacity 
+              style={styles.permissionBtn}
+              onPress={() => {
+                const newPermission = PERMISSION_LEVEL === 7 ? 1 : PERMISSION_LEVEL + 1;
+                setPermissionLevel(newPermission);
+                Alert.alert('权限已切换', `当前权限级别: ${newPermission}`, [
+                  { text: '刷新数据', onPress: () => fetchAllPendingCounts() },
+                  { text: '取消', style: 'cancel' }
+                ]);
+              }}
+            >
+              <Text style={[styles.permissionText, { color: theme.colors.onSurface }]}>
+                权限{PERMISSION_LEVEL}
+              </Text>
+            </TouchableOpacity>
             <View style={styles.bellIcon}>
               <Icon source="bell" size={24} />
             </View>
@@ -426,6 +718,17 @@ const styles = StyleSheet.create({
   },
   bellIcon: {
     marginLeft: 24,
+  },
+  permissionBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: 'rgba(0,0,0,0.1)',
+    borderRadius: 16,
+    marginRight: 12,
+  },
+  permissionText: {
+    fontSize: 12,
+    fontWeight: 'bold',
   },
   allWorkOrders: {
     marginHorizontal: 16,

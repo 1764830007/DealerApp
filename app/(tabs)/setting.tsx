@@ -13,9 +13,12 @@ export default function SettingScreen() {
 
   const handleLogout = async () => {
     try {
+      console.log('🟢 Settings: Logout button pressed');
+      console.log('🟢 Settings: Calling logout function...');
       await logout();
+      console.log('🟢 Settings: Logout function completed, RouteProtection should handle navigation');
     } catch (error) {
-      console.error('Logout error:', error);
+      console.error('🔴 Settings: Logout error:', error);
     }
   };
 
@@ -213,10 +216,12 @@ const styles = StyleSheet.create({
     marginLeft: 48,  // 20(icon) + 12(margin) + 16(padding)
   },
   logoutContainer: {
-    ...StyleSheet.absoluteFillObject, // 填充整个父容器
-    justifyContent: 'flex-end', // 垂直方向靠底部
-    padding: 20, // 底部和左右的间距
-    pointerEvents: 'none', // 让容器不拦截点击事件，避免影响底部内容
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: 20,
+    pointerEvents: 'box-none', // Allow touches to pass through to children but not to this container
   },
   logoutButton: {
     padding: 15,

@@ -1,0 +1,568 @@
+import { useRouter } from 'expo-router';
+import React, { useEffect, useCallback, useState, useRef } from 'react';
+import {
+    ActivityIndicator,
+    FlatList,
+    StyleSheet,
+    Text,
+    TextInput,
+    View,
+    TouchableOpacity,
+    Alert,
+    RefreshControl,
+    Image,
+} from 'react-native';
+import { useIsFocused } from '@react-navigation/native';
+import api from '../services/api';
+
+interface FenceItem {
+    FenceID: string;
+    Name: string;
+    Description: string;
+    CreatedAt: string;
+}
+
+interface FenceFilter {
+    searchCriteria: string;
+}
+
+export default function FenceList() {
+    const router = useRouter();
+    const isFocused = useIsFocused();
+    const [isLoading, setIsLoading] = useState(false);
+    const [isRefreshing, setIsRefreshing] = useState(false);
+    const [items, setItems] = useState<FenceItem[]>([]);
+    const [hasNextPage, setHasNextPage] = useState(true);
+    const [searchText, setSearchText] = useState('');
+    const currentPage = useRef(1);
+    const filter = useRef<FenceFilter>({ searchCriteria: '' });
+
+    const loadItems = useCallback(async (refresh = false) => {
+        if (isLoading) return;
+
+        try {
+            setIsLoading(true);
+            if (refresh) {
+                currentPage.current = 1;
+                setItems([]);
+            }
+
+            // TODO: Replace with actual API call
+            const newItems: FenceItem[] = []; // Fetch from API
+            
+            if (refresh) {
+                setItems(newItems);
+            } else {
+                setItems(prev => [...prev, ...newItems]);
+            }
+            
+            setHasNextPage(newItems.length > 0);
+            currentPage.current += 1;
+        } catch (error) {
+            console.error('Error loading fences:', error);
+            Alert.alert('Error', 'Failed to load fences');
+        } finally {
+            setIsLoading(false);
+            setIsRefreshing(false);
+        }
+    }, [isLoading]);
+
+    useEffect(() => {
+        if (isFocused) {
+            loadItems(true);
+        }
+    }, [isFocused, loadItems]);
+
+    const onRefresh = useCallback(() => {
+        setIsRefreshing(true);
+        loadItems(true);
+    }, [loadItems]);
+
+    const onEndReached = useCallback(() => {
+        if (hasNextPage && !isLoading) {
+            loadItems();
+        }
+    }, [hasNextPage, isLoading, loadItems]);
+
+    const handleMapPress = () => {
+        router.push('/fence/map' as any);
+    };
+
+    const handleCreatePress = async () => {
+        // TODO: Replace with actual API call to check fence amount
+        const fenceCount = items.length;
+        if (fenceCount >= 10) {
+            Alert.alert('Notice', 'Maximum number of fences reached');
+            return;
+        }
+        router.push('/fence/create' as any);
+    };
+
+    const renderItem = useCallback(({ item }: { item: FenceItem }) => (
+        <TouchableOpacity
+            style={styles.itemContainer}
+            onPress={() => router.push(`/fence/${item.FenceID}` as any)}
+        >
+            <View>
+                <Text style={styles.itemName}>{item.Name}</Text>
+                <Text style={styles.itemDescription}>{item.Description}</Text>
+                <Text style={styles.itemDate}>{item.CreatedAt}</Text>
+            </View>
+        </TouchableOpacity>
+    ), [router]);
+
+    const renderFooter = useCallback(() => {
+        if (!isLoading) return null;
+        return (
+            <View style={styles.loaderContainer}>
+                <ActivityIndicator size="large" />
+            </View>
+        );
+    }, [isLoading]);
+
+    return (
+        <View style={styles.container}>
+            <View style={styles.header}>
+                <TextInput
+                    style={styles.searchBar}
+                    placeholder="Search..."
+                    value={searchText}
+                    onChangeText={(text) => {
+                        setSearchText(text);
+                        if (!text) {
+                            filter.current.searchCriteria = '';
+                            loadItems(true);
+                        }
+                    }}
+                    onSubmitEditing={() => {
+                        filter.current.searchCriteria = searchText;
+                        loadItems(true);
+                    }}
+                />
+                <TouchableOpacity onPress={handleMapPress} style={styles.iconButton}>
+                    <Ionicons name="map-outline" size={24} color="black" />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={handleCreatePress} style={styles.iconButton}>
+                    <Ionicons name="add-outline" size={24} color="black" />
+                </TouchableOpacity>
+            </View>
+
+            <FlatList
+                data={items}
+                renderItem={renderItem}
+                keyExtractor={(item) => item.FenceID}
+                onEndReached={onEndReached}
+                onEndReachedThreshold={0.5}
+                ListFooterComponent={renderFooter}
+                refreshControl={
+                    <RefreshControl
+                        refreshing={isRefreshing}
+                        onRefresh={onRefresh}
+                    />
+                }
+                ListEmptyComponent={
+                    !isLoading ? (
+                        <View style={styles.emptyContainer}>
+                            <Text style={styles.emptyText}>No fences found</Text>
+                        </View>
+                    ) : null
+                }
+            />
+        </View>
+    );
+}
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: '#fff',
+    },
+    header: {
+        flexDirection: 'row',
+        padding: 8,
+        alignItems: 'center',
+        borderBottomWidth: 1,
+        borderBottomColor: '#eee',
+    },
+    searchBar: {
+        flex: 1,
+        height: 40,
+        borderWidth: 1,
+        borderColor: '#ddd',
+        borderRadius: 8,
+        paddingHorizontal: 12,
+        marginRight: 8,
+    },
+    iconButton: {
+        padding: 8,
+    },
+    itemContainer: {
+        padding: 16,
+        borderBottomWidth: 1,
+        borderBottomColor: '#eee',
+    },
+    itemName: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        marginBottom: 4,
+    },
+    itemDescription: {
+        fontSize: 14,
+        color: '#666',
+        marginBottom: 4,
+    },
+    itemDate: {
+        fontSize: 12,
+        color: '#999',
+    },
+    loaderContainer: {
+        paddingVertical: 16,
+        alignItems: 'center',
+    },
+    emptyContainer: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 16,
+    },
+    emptyText: {
+        fontSize: 16,
+        color: '#666',
+    },
+});} from 'expo-router';
+import React, { useCallback, useEffect, useState } from 'react';
+import {
+    ActivityIndicator,
+    FlatList,
+    Image,
+    RefreshControl,
+    StyleSheet,
+    Text,
+    TextInput,
+    View,
+    TouchableOpacity,
+    Alert,
+} from 'react-native';
+import { useIsFocused } from '@react-navigation/native';
+import { SearchBar } from '@rneui/themed';
+import { Ionicons } from '@expo/vector-icons';
+import { UIConfig } from '../../constants/config';
+import Logger from '../../utils/Logger';
+    TouchableOpacity,
+    View,
+} from 'react-native';
+import api from '../services/api';
+
+interface FenceItem {
+  FenceID: string;
+  FenceName: string;
+  FenceStatus: string;
+  Numberofequipment: number;
+  IsUnfold: boolean;
+}
+
+export default function FenceList() {
+  const router = useRouter();
+  const [searchText, setSearchText] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [isFullyLoaded, setIsFullyLoaded] = useState(false);
+  const [listItems, setListItems] = useState<FenceItem[]>([]);
+  const [page, setPage] = useState(1);
+  const pageSize = 20;
+
+  const loadItems = async (pageNumber: number = 1, refresh: boolean = false) => {
+    if (loading || (isFullyLoaded && !refresh)) return;
+
+    try {
+      setLoading(true);
+      // API call to fetch fence list
+      const response = await api.get(`/services/app/Fence/GetMyFenceList`, {
+        params: {
+          MaxResultCount: pageSize,
+          SkipCount: (pageNumber - 1) * pageSize,
+          Keyword: searchText,
+        }
+      });
+
+      const newItems = response.data.result.items || [];
+      if (refresh) {
+        setListItems(newItems);
+        setPage(1);
+        setIsFullyLoaded(newItems.length < pageSize);
+      } else {
+        setListItems(prev => [...prev, ...newItems]);
+        setIsFullyLoaded(newItems.length < pageSize);
+      }
+    } catch (error) {
+      console.error('Failed to load fence list:', error);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    setIsFullyLoaded(false);
+    loadItems(1, true);
+  }, []);
+
+  const onEndReached = () => {
+    if (!loading && !isFullyLoaded) {
+      loadItems(page + 1);
+      setPage(prev => prev + 1);
+    }
+  };
+
+  const handleSearch = (text: string) => {
+    setSearchText(text);
+    // Optional: Implement debounced search
+    loadItems(1, true);
+  };
+
+  const navigateToMap = () => {
+    router.push('/fence/map');
+  };
+
+  const navigateToCreate = () => {
+    router.push('/fence/create');
+  };
+
+  const renderItem = ({ item }: { item: FenceItem }) => (
+    <TouchableOpacity 
+      style={styles.itemContainer}
+      onPress={() => router.push(`/fence/${item.FenceID}`)}
+    >
+      <View style={styles.itemHeader}>
+        <View style={styles.idNameContainer}>
+          <Text style={styles.idText}>{item.FenceID} - </Text>
+          <Text style={styles.nameText}>{item.FenceName}</Text>
+        </View>
+      </View>
+
+      {item.IsUnfold && (
+        <View style={styles.itemDetails}>
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>Fence Status:</Text>
+            <Text style={styles.detailValue}>{item.FenceStatus || 'N/A'}</Text>
+          </View>
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>Number of Equipment:</Text>
+            <Text style={styles.detailValue}>{item.Numberofequipment || '0'}</Text>
+          </View>
+          <Image 
+            source={require('../../assets/images/global_rightarrow.png')} 
+            style={styles.arrowIcon}
+          />
+        </View>
+      )}
+    </TouchableOpacity>
+  );
+
+  const renderFooter = () => {
+    if (loading) {
+      return (
+        <View style={styles.footer}>
+          <ActivityIndicator size="small" color="#999999" />
+        </View>
+      );
+    }
+    if (isFullyLoaded) {
+      return (
+        <View style={styles.footer}>
+          <Text style={styles.footerText}>No More Data</Text>
+        </View>
+      );
+    }
+    return null;
+  };
+
+  const renderEmpty = () => (
+    <View style={styles.emptyContainer}>
+      <Image 
+        source={require('../../assets/images/global_nodata.png')} 
+        style={styles.emptyImage}
+      />
+      <Text style={styles.emptyText}>No Fence Data Available</Text>
+    </View>
+  );
+
+  return (
+    <View style={styles.container}>
+      <View style={styles.header}>
+        <View style={styles.searchContainer}>
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search fences..."
+            value={searchText}
+            onChangeText={handleSearch}
+          />
+        </View>
+        <TouchableOpacity onPress={navigateToMap} style={styles.mapButton}>
+          <Image 
+            source={require('../../assets/images/equipment_map.png')} 
+            style={styles.mapIcon}
+          />
+          <Text style={styles.mapText}>Map</Text>
+        </TouchableOpacity>
+      </View>
+
+      <FlatList
+        data={listItems}
+        renderItem={renderItem}
+        keyExtractor={item => item.FenceID}
+        onEndReached={onEndReached}
+        onEndReachedThreshold={0.1}
+        ListFooterComponent={renderFooter}
+        ListEmptyComponent={renderEmpty}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+        contentContainerStyle={styles.listContainer}
+      />
+
+      <TouchableOpacity 
+        style={styles.fabButton}
+        onPress={navigateToCreate}
+      >
+        <Image 
+          source={require('../../assets/images/toolbar_plus.png')} 
+          style={styles.fabIcon}
+        />
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+  },
+  header: {
+    flexDirection: 'row',
+    padding: 15,
+    alignItems: 'center',
+  },
+  searchContainer: {
+    flex: 1,
+    marginRight: 10,
+  },
+  searchInput: {
+    backgroundColor: 'white',
+    padding: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  mapButton: {
+    alignItems: 'center',
+  },
+  mapIcon: {
+    width: 20,
+    height: 20,
+  },
+  mapText: {
+    fontSize: 10,
+    marginTop: 4,
+  },
+  listContainer: {
+    flexGrow: 1,
+  },
+  itemContainer: {
+    backgroundColor: 'white',
+    marginHorizontal: 15,
+    marginVertical: 5,
+    borderRadius: 8,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+  },
+  itemHeader: {
+    padding: 10,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#e0e0e0',
+  },
+  idNameContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  idText: {
+    fontSize: 17,
+    fontWeight: 'bold',
+  },
+  nameText: {
+    fontSize: 17,
+    fontWeight: 'bold',
+  },
+  itemDetails: {
+    padding: 10,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    marginVertical: 2,
+  },
+  detailLabel: {
+    fontSize: 12,
+    color: '#666',
+    width: 120,
+  },
+  detailValue: {
+    fontSize: 12,
+    color: '#333',
+  },
+  arrowIcon: {
+    width: 20,
+    height: 20,
+    position: 'absolute',
+    right: 10,
+    top: '50%',
+    marginTop: -10,
+  },
+  footer: {
+    padding: 10,
+    alignItems: 'center',
+  },
+  footerText: {
+    color: '#999999',
+  },
+  emptyContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 20,
+  },
+  emptyImage: {
+    width: 100,
+    height: 100,
+    marginBottom: 10,
+  },
+  emptyText: {
+    color: '#999999',
+    fontSize: 17,
+  },
+  fabButton: {
+    position: 'absolute',
+    right: 20,
+    bottom: 20,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#007AFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+  },
+  fabIcon: {
+    width: 24,
+    height: 24,
+    tintColor: 'white',
+  },
+});

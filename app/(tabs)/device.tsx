@@ -1,73 +1,116 @@
-import EquipmentItem from "@/components/EquipmentItem";
+import { useLocalization } from "@/hooks/locales/LanguageContext";
+import { useRouter } from "expo-router";
 import {
-  FlatList,
+  ScrollView,
   StyleSheet,
-  View
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
-import { Appbar, useTheme } from "react-native-paper";
-import equipmentMenus from "../../assets/data/EquipmentMenus.json";
-import { useTheme as useCustomTheme } from '../contexts/ThemeContext';
+import { Appbar, Icon } from "react-native-paper";
 
 export default function DeviceScreen() {
-  const { currentTheme } = useCustomTheme();
-  const theme = useTheme();
+  const { t } = useLocalization();
+  const router= useRouter();
 
   return (
-    <View style={[styles.container, { backgroundColor: currentTheme === 'dark' ? theme.colors.surfaceVariant : '#eee' }]}>
-      <Appbar.Header style={[styles.bar, { backgroundColor: currentTheme === 'dark' ? theme.colors.surface : '#FFFFFF' }]}>
-        <Appbar.Content title="设备管理" titleStyle={{ color: currentTheme === 'dark' ? theme.colors.onSurface : '#000000' }} />
-      </Appbar.Header> 
-
-      <FlatList
-        data={equipmentMenus}
-        renderItem={({ item }) => <EquipmentItem equipmentMenu={item} />}
-        keyExtractor={(item) => item.id}
-        style={styles.flatList}
-      />
-    </View>
+    <ScrollView>
+      <View style={styles.container}>
+        <Appbar.Header style={styles.bar} elevated>
+          <Appbar.Content
+            title={t('equipment.management')}
+            titleStyle={{ fontSize: 16, fontWeight: 600 }}
+          />
+        </Appbar.Header>
+        {/* 设备管理汇总 */}
+        <TouchableOpacity
+          style={styles.deviceCard}
+          onPress={() => router.push('/devices/equipment-list')}
+        >
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <Icon source="account-card" size={24}></Icon>
+            <Text style={{ marginLeft: 20 }}>{t('equipment.list')}</Text>
+          </View>
+          <Icon source="chevron-right" size={24} />
+        </TouchableOpacity>
+        {/* 设备统计报告 */}
+        <TouchableOpacity
+          style={styles.deviceCard}
+          onPress={() => router.push("/devices/equipment-report")}
+        >
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <Icon source="account-card" size={24}></Icon>
+            <Text style={{ marginLeft: 20 }}>{t('equipment.statisticReport')}</Text>
+          </View>
+          <Icon source="chevron-right" size={24} />
+        </TouchableOpacity>
+        {/* 设备故障报警 */}
+        <TouchableOpacity
+          style={styles.deviceCard}
+          onPress={() => router.push("/devices/equipment-fault-alert")}
+        >
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <Icon source="account-card" size={24}></Icon>
+            <Text style={{ marginLeft: 20 }}>{t('equipment.faultAlert')}</Text>
+          </View>
+          <Icon source="chevron-right" size={24} />
+        </TouchableOpacity>
+        {/* 电子围栏 */}
+        <TouchableOpacity
+          style={styles.deviceCard}
+          onPress={() => router.push("/devices/equipment-fence")}
+        >
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <Icon source="account-card" size={24}></Icon>
+            <Text style={{ marginLeft: 20 }}>{t('equipment.fence')}</Text>
+          </View>
+          <Icon source="chevron-right" size={24} />
+        </TouchableOpacity>
+        {/* 设备绑定申请列表 */}
+        <TouchableOpacity
+          style={styles.deviceCard}
+          onPress={() => router.push("/devices/equipment-bind-list")}
+        >
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <Icon source="account-card" size={24}></Icon>
+            <Text style={{ marginLeft: 20 }}>{t('equipment.bindlist')}</Text>
+          </View>
+          <Icon source="chevron-right" size={24} />
+        </TouchableOpacity>
+        {/* 创建绑定申请 */}
+         <TouchableOpacity
+          style={styles.deviceCard}
+          onPress={() => router.push("/devices/equipment-create-bind")}
+        >
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <Icon source="account-card" size={24}></Icon>
+            <Text style={{ marginLeft: 20 }}>{t('equipment.createBind')}</Text>
+          </View>
+          <Icon source="chevron-right" size={24} />
+        </TouchableOpacity>
+      </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: "#eee",
-    flex: 1,
-  },
-  flatList: {
-    flex: 1,
+    backgroundColor: "#f6f6f6",
   },
   bar: {
-    elevation: 4,
-
-    // iOS 阴影
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-
-    // 确保阴影可见（iOS需要设置背景色）
-    zIndex: 1,
+    backgroundColor: "#f6f6f6",
+    boxShadow: "rgba(0, 0, 0, 0.15) 1.95px 1.95px 2.6px",
   },
-  barIcon: {
-    backgroundColor: "white",
-  },
-  profileList: {
-    backgroundColor: "#FFFFFF",
-    flexDirection: "row", // 横向排列
-    alignItems: "center", // 垂直居中
-    justifyContent: "space-between", // 左右两端对齐
-    paddingVertical: 12, // 垂直内边距
+  deviceCard: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    width: "90%",
+    margin: "auto",
+    backgroundColor: "#fff",
+    borderRadius: 8,
+    paddingVertical: 20, // 垂直内边距
     paddingHorizontal: 16, // 水平内边距
-    height: 100,
-    marginTop: 15,
-  },
-
-  leftContent: {
-    flexDirection: "row", // 图标和文字横向排列
-    alignItems: "center", // 垂直居中
-  },
-  profileListContent: {
-    marginLeft: 12, // 文字与左边图标的间距
-    fontSize: 16,
+    marginTop: 20,
   },
 });

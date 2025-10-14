@@ -1,6 +1,7 @@
 // app/contexts/AuthContext.tsx
-import React, { createContext, useContext, useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import React, { createContext, useContext, useEffect, useState } from 'react';
+import authService from '../services/AuthService';
 
 interface AuthContextType {
   isLoggedIn: boolean | null;
@@ -33,9 +34,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const logout = async () => {
-    await AsyncStorage.removeItem('isLoggedIn');
-    await AsyncStorage.removeItem('username');
-    setIsLoggedIn(false);
+    console.log('🔴 AuthContext logout function called');
+    console.log('🔴 Current isLoggedIn state:', isLoggedIn);
+    
+    try {
+      console.log('🔴 Calling authService.logout()...');
+      // Use AuthService logout method which handles all storage cleanup
+      await authService.logout();
+      console.log('🔴 authService.logout() completed');
+      
+      // Also clear additional data not handled by AuthService
+      console.log('🔴 Clearing additional storage items...');
+      await AsyncStorage.removeItem('username');
+      await AsyncStorage.removeItem('userPIN');
+      console.log('🔴 Additional storage items cleared');
+      
+      console.log('🔴 Setting isLoggedIn to false...');
+      setIsLoggedIn(false);
+      console.log('🔴 isLoggedIn set to false, should trigger route protection');
+      
+      console.log('🔴 Logout completed successfully');
+    } catch (error) {
+      console.error('🔴 Error during logout:', error);
+      console.log('🔴 Setting isLoggedIn to false despite error...');
+      setIsLoggedIn(false); // Still set to false even if storage clear fails
+      console.log('🔴 isLoggedIn set to false');
+    }
   };
 
   return (
@@ -52,3 +76,6 @@ export function useAuth() {
   }
   return context;
 }
+
+// default export so expo-router doesn't warn about a missing route component
+export default AuthProvider;

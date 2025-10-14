@@ -35,7 +35,17 @@
   },
   "changeLocale": "修改语言",
   "equipment": {
-    "equipment": "设备",
-    "management": "设备管理"
+    "management": "设备管理",
+    "list": "设备管理汇总",
+    "statisticReport": "设备统计报告",
+    "faultAlert": "设备故障报警",
+    "fence": "电子围栏",
+    "bindlist": "设备绑定申请列表",
+    "createBind": "创建绑定申请",
+    "count": "设备数",
+    "online": "在线数",
+    "offline": "离线",
+    "detail": "设备详情",
+    "configDetail": "配置信息"
   }
 }

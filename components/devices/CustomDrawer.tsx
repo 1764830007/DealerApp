@@ -1,6 +1,6 @@
 import { useRouter } from "expo-router";
 import React, { useRef } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import {
   Gesture,
   GestureDetector,
@@ -14,20 +14,13 @@ import ReanimatedDrawerLayout, {
 } from "react-native-gesture-handler/ReanimatedDrawerLayout";
 import { Appbar, useTheme } from "react-native-paper";
 
-const DrawerPage = () => {
-  return (
-    <View style={styles.drawerContainer}>
-      <Text>test</Text>
-    </View>
-  );
-};
-
 export interface DrawerProps {
   title: string;
   children: React.ReactNode;
+  drawerContent?: () => React.JSX.Element;
 }
 
-export default function CustomDrawer({ title, children }: DrawerProps) {
+export default function CustomDrawer({ title, children, drawerContent }: DrawerProps) {
   const router = useRouter();
   const drawerRef = useRef<DrawerLayoutMethods>(null);
   const theme = useTheme();
@@ -39,7 +32,7 @@ export default function CustomDrawer({ title, children }: DrawerProps) {
     <GestureHandlerRootView>
       <ReanimatedDrawerLayout
         ref={drawerRef}
-        renderNavigationView={() => <DrawerPage />}
+        renderNavigationView={ () => drawerContent?.() }
         drawerPosition={DrawerPosition.RIGHT}
         drawerType={DrawerType.SLIDE}
       >

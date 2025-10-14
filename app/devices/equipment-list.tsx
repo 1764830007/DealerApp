@@ -1,11 +1,15 @@
 import CustomDrawer from "@/components/devices/CustomDrawer";
+import EmptyDrawer, { Helpers } from "@/components/devices/EmptyDrawer";
 import EquipmentCard from "@/components/devices/equipment-card";
 import { useLocalization } from "@/hooks/locales/LanguageContext";
 import Feather from "@expo/vector-icons/Feather";
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
-import { Icon, Searchbar, SegmentedButtons } from "react-native-paper";
+import { StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { GestureDetector } from "react-native-gesture-handler";
+import { Button, Icon, Searchbar, SegmentedButtons } from "react-native-paper";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function EquipmentManageList() {
   const { t } = useLocalization();
@@ -13,14 +17,52 @@ export default function EquipmentManageList() {
   const [filterActive, setFilterActive] = useState(false);
   const [equipSearchField, setEquipmentSearchField] = useState("");
   const [selectedTab, setSelectedTab] = useState("all");
+  const [modalVisible, setModalVisible] = useState(false);
+  
+  const [dealerText, setDealerText] = useState('search');
   // const tabs = [
   //   { value: "all", label: "全部"},
   //   { value: "online", label: "已连接" },
   //   { value: "offline", label: "未连接"},
   // ];
 
+ const EquipSearch = () => {
   return (
-    <CustomDrawer title={t("equipment.list")}>
+    <SafeAreaView style={{flex: 1}}>
+      {/* 点击经销商，打开侧边栏，选择经销商，点击确认 */}
+      <EmptyDrawer drawerContent={ (helpers: Helpers) => (
+        <>
+          <View style={{flexDirection: 'row', justifyContent: 'space-between' }}>
+            <Ionicons name="search-outline" size={24} color="black" />
+            <TextInput value={dealerText} onChangeText={setDealerText} />
+            <GestureDetector gesture={helpers.closeDrawer}>
+              <Button>confirm</Button>
+            </GestureDetector>
+          </View>
+        </>
+        ) } >
+        {(helpers: Helpers) => (  
+          <>
+            <Text style={{ paddingHorizontal: 10 }}>经销商</Text>
+            <GestureDetector gesture={helpers.openDrawer}>
+            <TouchableOpacity
+              style={{
+                paddingLeft: 20, paddingRight: 10,
+                flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center'
+              }}>
+              <Text>{dealerText}</Text>
+              <Icon source="chevron-right" size={20} />
+            </TouchableOpacity>
+            </GestureDetector>
+          </>
+        ) }
+      </EmptyDrawer>
+    </SafeAreaView>
+  );
+ };
+
+  return (
+    <CustomDrawer drawerContent={() => <EquipSearch /> } title={t("equipment.list") }>
       <View style={styles.container}>
         {/* search bar */}
         <View

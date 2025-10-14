@@ -5,6 +5,10 @@ import { Button, Card, Chip } from "react-native-paper";
 
 export default function EquipmentCard() {
   const router = useRouter();
+  
+  const goToFaultAlarm = () => {
+    router.push('/devices/equipment-fault-alert');
+  };
   return (
     <Card
       mode="contained"
@@ -65,7 +69,7 @@ export default function EquipmentCard() {
             {/* 行车轨迹，故障报警，电子图册，服务手册 按钮 */}
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 10 }}>
                 <Button mode="contained" compact buttonColor='#f2f2f2' labelStyle={{fontSize: 12, fontWeight: 400, marginVertical: 2, color: '#083a78' }} style={{borderRadius: 4 }}>行车轨迹</Button>
-                <Button mode="contained" compact buttonColor='#f2f2f2' labelStyle={{fontSize: 12, fontWeight: 400, marginVertical: 2, color: '#083a78' }} style={{borderRadius: 4 }}>故障报警</Button>
+                <Button mode="contained" onPress={goToFaultAlarm} compact buttonColor='#f2f2f2' labelStyle={{fontSize: 12, fontWeight: 400, marginVertical: 2, color: '#083a78' }} style={{borderRadius: 4 }}>故障报警</Button>
                 <Button mode="contained" compact buttonColor='#f2f2f2' labelStyle={{fontSize: 12, fontWeight: 400, marginVertical: 2, color: '#083a78' }} style={{borderRadius: 4 }}>电子图册</Button>
                 <Button mode="contained" compact buttonColor='#f2f2f2' labelStyle={{fontSize: 12, fontWeight: 400, marginVertical: 2, color: '#083a78' }} style={{borderRadius: 4 }}>服务手册</Button>
             </View>

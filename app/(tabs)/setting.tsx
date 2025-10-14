@@ -145,17 +145,17 @@ export default function SettingScreen() {
         </View>
 
         <View style={{ padding: 20, marginTop: 20 }}>
-        <TouchableOpacity
-          style={[styles.logoutButton, { backgroundColor: '#37589eff' }]}
-          onPress={() => locale === 'zh' ?
-        setLanguage('en') : setLanguage('zh')}
-        >
-          <Text style={styles.logoutText}>{t('changeLocale')}</Text>
-        </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.logoutButton, { backgroundColor: '#37589eff' }]}
+            onPress={() => locale === 'zh' ?
+              setLanguage('en') : setLanguage('zh')}
+          >
+            <Text style={styles.logoutText}>{t('changeLocale')}</Text>
+          </TouchableOpacity>
+        </View>
       </View>
-      </View>
-      
-     
+
+
       {/* 固定在底部的注销按钮 */}
       <View style={styles.logoutContainer}>
         <TouchableOpacity

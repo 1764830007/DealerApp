@@ -19,7 +19,7 @@ import {
   useTheme
 } from 'react-native-paper';
 import { useLocalization } from '../../hooks/locales/LanguageContext';
-import { api } from '../services/api';
+import api from '../services/api';
 
 // 前端工单接口定义
 interface WorkOrder {
@@ -297,7 +297,8 @@ const Index = () => {
       
       requestParams = getPendingAssignmentParams();
       
-      const data = await api.post<any>('services/app/WorkOrderService/GetWorkOrdersByParameters', requestParams);
+      const response = await api.post<any>('/services/app/WorkOrderService/GetWorkOrdersByParameters', requestParams);
+      const data = response.data;
       console.log(`获取segStatusId=${segStatusId}的API响应数据:`, data);
 
       // 验证响应有效性：成功且有result.data，则orderSegNo数量 = data数组长度
@@ -307,7 +308,7 @@ const Index = () => {
       console.warn(`获取segStatusId=${segStatusId}数据失败，返回0`);
       return 0;
     } catch (err: any) {
-      console.error(`获取segStatusId=${segStatusId}错误:`, err.message);
+      console.error(`获取segStatusId=${segStatusId}错误:`, err.response?.data?.error?.message || err.message);
       return 0;
     }
   };
@@ -415,17 +416,18 @@ const Index = () => {
   const fetchPendingDepartCount = async (): Promise<number> => {
     try {
       const requestParams = getPendingDepartParams();
-      let data: any;
+      let response: any;
       
       // 根据权限级别选择不同的API
       if (PERMISSION_LEVEL === 2 || PERMISSION_LEVEL === 4) {
         // 派工权限和申请+派工权限使用GetWorkOrdersByParameters API
-        data = await api.post<any>('services/app/WorkOrderService/GetWorkOrdersByParameters', requestParams);
+        response = await api.post<any>('/services/app/WorkOrderService/GetWorkOrdersByParameters', requestParams);
       } else {
         // 其他权限使用GetWorkOrdersBySegStatus API
-        data = await api.post<any>('services/app/WorkOrderService/GetWorkOrdersBySegStatus', requestParams);
+        response = await api.post<any>('/services/app/WorkOrderService/GetWorkOrdersBySegStatus', requestParams);
       }
       
+      const data = response.data;
       console.log('获取待出发数量的API响应数据:', data);
 
       // 验证响应有效性：成功且有result.data，则数量 = data数组长度
@@ -435,7 +437,7 @@ const Index = () => {
       console.warn('获取待出发数量失败，返回0');
       return 0;
     } catch (err: any) {
-      console.error('获取待出发数量错误:', err.message);
+      console.error('获取待出发数量错误:', err.response?.data?.error?.message || err.message);
       return 0;
     }
   };
@@ -444,17 +446,18 @@ const Index = () => {
   const fetchInProgressCount = async (): Promise<number> => {
     try {
       const requestParams = getInProgressParams();
-      let data: any;
+      let response: any;
       
       // 根据权限级别选择不同的API
       if (PERMISSION_LEVEL === 2 || PERMISSION_LEVEL === 4) {
         // 派工权限和申请+派工权限使用GetWorkOrdersByParameters API
-        data = await api.post<any>('services/app/WorkOrderService/GetWorkOrdersByParameters', requestParams);
+        response = await api.post<any>('/services/app/WorkOrderService/GetWorkOrdersByParameters', requestParams);
       } else {
         // 其他权限使用GetWorkOrdersBySegStatus API
-        data = await api.post<any>('services/app/WorkOrderService/GetWorkOrdersBySegStatus', requestParams);
+        response = await api.post<any>('/services/app/WorkOrderService/GetWorkOrdersBySegStatus', requestParams);
       }
       
+      const data = response.data;
       console.log('获取进行中数量的API响应数据:', data);
 
       // 验证响应有效性：成功且有result.data，则数量 = data数组长度
@@ -464,7 +467,7 @@ const Index = () => {
       console.warn('获取进行中数量失败，返回0');
       return 0;
     } catch (err: any) {
-      console.error('获取进行中数量错误:', err.message);
+      console.error('获取进行中数量错误:', err.response?.data?.error?.message || err.message);
       return 0;
     }
   };
@@ -490,7 +493,8 @@ const Index = () => {
         workOrderNoOrMachineNo: null
       };
       
-      const data = await api.post<any>('services/app/WorkOrderService/GetWorkOrdersBySegStatus', requestParams);
+      const response = await api.post<any>('/services/app/WorkOrderService/GetWorkOrdersBySegStatus', requestParams);
+      const data = response.data;
       console.log('获取最新工单的API响应数据:', data);
 
       // 验证响应有效性：成功且有result.data，则取第一条作为最新工单
@@ -510,7 +514,7 @@ const Index = () => {
         setLatestWorkOrder(null);
       }
     } catch (err: any) {
-      console.error('获取最新工单错误:', err.message);
+      console.error('获取最新工单错误:', err.response?.data?.error?.message || err.message);
       setLatestWorkOrder(null);
     }
   };
@@ -560,15 +564,15 @@ const Index = () => {
     try {
       setLoading(true);
       setError(null);
-      const data = await api.post<any>('services/app/WorkOrderService/GetWorkOrdersByParameters', {
+      const response = await api.post<any>('/services/app/WorkOrderService/GetWorkOrdersByParameters', {
         limit: 2,
         orderByLastUpdatedTime: true,
         offset: 0
       });
-      console.log('API响应数据:', data);
+      console.log('API响应数据:', response.data);
 
-      if (data.success && data.result) {
-        const transformedOrders: WorkOrder[] = data.result.data.map((order: any) => ({
+      if (response.data.success && response.data.result) {
+        const transformedOrders: WorkOrder[] = response.data.result.data.map((order: any) => ({
           code: order.workOrderNo,
           status: order.workOrderStatus,
           productModel: order.machineModel,
@@ -579,12 +583,13 @@ const Index = () => {
         }));
         setWorkOrders(transformedOrders);
       } else {
-        throw new Error(data.error || '获取工单列表失败');
+        throw new Error(response.data.error?.message || '获取工单列表失败');
       }
     } catch (err: any) {
       console.error('获取工单列表错误:', err);
-      setError(err.message || '网络请求失败');
-      Alert.alert('错误', '获取工单数据失败，请检查网络');
+      const errorMessage = err.response?.data?.error?.message || err.message || '网络请求失败';
+      setError(errorMessage);
+      Alert.alert('错误', `获取工单数据失败: ${errorMessage}`);
     } finally {
       setLoading(false);
     }
@@ -607,9 +612,9 @@ const Index = () => {
 
   // 功能按钮处理函数
   const handleFuncBtnPress = (funcName: string) => {
-    console.log(`点击了功能按钮: ${funcName}`);
-    // 这里可以添加导航到对应页面的逻辑
-    Alert.alert('提示', `点击了${funcName}功能`);
+    if (funcName === '设备管理') {
+      router.push('/deviceManagement');
+    }
   };
 
   // 刷新处理函数

@@ -63,7 +63,7 @@ export default function RootLayout() {
               <Stack.Screen name="pin-setup" options={{ headerShown: false }} />
               <Stack.Screen name="dark-mode" options={{ headerShown: false }} />
               <Stack.Screen name="devices" options={{ headerShown: false }} />
-              <Stack.Screen name="devices/equipment-list" options={{ headerShown: false }} />
+              <Stack.Screen name="deviceManagement" options={{ headerShown: false }} />
               <Stack.Screen name="devices/equipment-list/[id]" options={{ headerShown: false }} />
               <Stack.Screen name="devices/equipment-report" options={{ headerShown: false }} />
               <Stack.Screen name="devices/equipment-fault-alert" options={{ headerShown: false }} />

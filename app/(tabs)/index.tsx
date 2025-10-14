@@ -291,18 +291,7 @@ const Index = () => {
     try {
       let requestParams: any;
       
-      // 如果是待派工状态（status=1），使用权限相关的参数
-      if (segStatusId === 1) {
-        requestParams = getPendingAssignmentParams();
-      } else {
-        // 其他状态使用通用参数
-        requestParams = {
-          limit: 1000,
-          segStatusIds: [segStatusId],
-          offset: 0,
-          onsiteOrNot: 'Y'
-        };
-      }
+      requestParams = getPendingAssignmentParams();
       
       const data = await api.post<any>('services/app/WorkOrderService/GetWorkOrdersByParameters', requestParams);
       console.log(`获取segStatusId=${segStatusId}的API响应数据:`, data);
@@ -319,7 +308,106 @@ const Index = () => {
     }
   };
 
-  // 5. 新增：单独获取待出发数量的函数
+  // 5. 新增：根据权限级别获取进行中数量的API参数配置
+  const getInProgressParams = (): any => {
+    const currentUser = 'F8KM_liyueye'; // 当前用户名，可以从token中获取
+    
+    switch (PERMISSION_LEVEL) {
+      // 1. 申请权限 (只有WorkOrderCreate权限)
+      case 1:
+        return {
+          limit: 1000,
+          offset: 0,
+          segStatusIds: [4],  // 进行中状态ID
+          onsiteOrNot: 'Y',
+          workOrderNoOrMachineNo: null
+        };
+      
+      // 2. 派工权限 (只有WorkOrderAssign权限)
+      case 2:
+        return {
+          limit: 2,
+          offset: 0,
+          createByUser: null,
+          workOrderNoOrMachineNo: null,
+          workOrderSource: null,
+          onsiteOrNot: null,
+          status: [4,5,6,8],  // 进行中状态ID
+          type: null,
+          dealer: null,
+          orderByLastUpdatedTime: false,
+          department: null
+        };
+      
+      // 3. 执行权限 (只有WorkOrderExecute权限)
+      case 3:
+        return {
+          limit: 2,
+          offset: 0,
+          segStatusIds: [4,5,6,8],  // 进行中状态ID
+          onsiteOrNot: 'Y',
+          workOrderNoOrMachineNo: null
+        };
+      
+      // 4. 申请+派工权限 (WorkOrderCreate + WorkOrderAssign)
+      case 4:
+        return {
+          limit: 2,
+          offset: 0,
+          createByUser: null,
+          workOrderNoOrMachineNo: null,
+          workOrderSource: null,
+          onsiteOrNot: null,
+          status: [4,5,6,8],  // 进行中状态ID
+          type: null,
+          dealer: null,
+          orderByLastUpdatedTime: false,
+          department: null
+        };
+      
+      // 5. 申请+执行权限 (WorkOrderCreate + WorkOrderExecute)
+      case 5:
+        return {
+          limit: 2,
+          offset: 0,
+          segStatusIds: [4,5,6,8],  // 进行中状态ID
+          onsiteOrNot: 'Y',
+          workOrderNoOrMachineNo: null
+        };
+      
+      // 6. 派工+执行权限 (WorkOrderAssign + WorkOrderExecute)
+      case 6:
+        return {
+          limit: 2,
+          offset: 0,
+          segStatusIds: [4,5,6,8],  // 进行中状态ID
+          onsiteOrNot: 'Y',
+          workOrderNoOrMachineNo: null
+        };
+      
+      // 7. 申请+派工+执行权限 (所有权限)
+      case 7:
+        return {
+          limit: 2,
+          offset: 0,
+          segStatusIds: [4,5,6,8],  // 进行中状态ID
+          onsiteOrNot: 'Y',
+          workOrderNoOrMachineNo: null
+        };
+      
+      // 默认使用执行权限的参数
+      default:
+        return {
+          limit: 1000,
+          offset: 0,
+          segStatusIds: [4],  // 进行中状态ID
+          onsiteOrNot: 'Y',
+          workOrderNoOrMachineNo: null
+        };
+    }
+  };
+
+  // 6. 新增：单独获取待出发数量的函数
   const fetchPendingDepartCount = async (): Promise<number> => {
     try {
       const requestParams = getPendingDepartParams();
@@ -338,7 +426,7 @@ const Index = () => {
 
       // 验证响应有效性：成功且有result.data，则数量 = data数组长度
       if (data.success && data.result?.data) {
-        return data.result.amount;
+        return data.result.data.length;
       }
       console.warn('获取待出发数量失败，返回0');
       return 0;
@@ -348,13 +436,42 @@ const Index = () => {
     }
   };
 
-  // 6. 新增：批量获取三类数量并计算总和
+  // 7. 新增：单独获取进行中数量的函数
+  const fetchInProgressCount = async (): Promise<number> => {
+    try {
+      const requestParams = getInProgressParams();
+      let data: any;
+      
+      // 根据权限级别选择不同的API
+      if (PERMISSION_LEVEL === 2 || PERMISSION_LEVEL === 4) {
+        // 派工权限和申请+派工权限使用GetWorkOrdersByParameters API
+        data = await api.post<any>('services/app/WorkOrderService/GetWorkOrdersByParameters', requestParams);
+      } else {
+        // 其他权限使用GetWorkOrdersBySegStatus API
+        data = await api.post<any>('services/app/WorkOrderService/GetWorkOrdersBySegStatus', requestParams);
+      }
+      
+      console.log('获取进行中数量的API响应数据:', data);
+
+      // 验证响应有效性：成功且有result.data，则数量 = data数组长度
+      if (data.success && data.result?.data) {
+        return data.result.data.length;
+      }
+      console.warn('获取进行中数量失败，返回0');
+      return 0;
+    } catch (err: any) {
+      console.error('获取进行中数量错误:', err.message);
+      return 0;
+    }
+  };
+
+  // 8. 新增：批量获取三类数量并计算总和
   const fetchAllPendingCounts = async () => {
     // 并行请求三类状态数据（提高效率，避免串行等待）
     const [assignCount, departCount, progressCount] = await Promise.all([
       fetchOrderSegCount(1), // 待分配（segStatusIds=1）
       fetchPendingDepartCount(), // 待出发（使用单独的待出发函数）
-      fetchOrderSegCount(4)  // 进行中（segStatusIds=4）
+      fetchInProgressCount()  // 进行中（使用单独的进行中函数）
     ]);
 
     // 更新状态：单个数量 + 总和

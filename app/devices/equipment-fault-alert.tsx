@@ -1,10 +1,10 @@
 import CustomDrawer from '@/components/devices/CustomDrawer';
 import FaultAlertCard from '@/components/devices/fault-alert-card';
 import FaultFilterDrawer, { FilterState } from '@/components/devices/fault-filter-drawer';
-import { ThemedView } from '@/components/themed-view';
 import { useRouter } from "expo-router";
 import { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet } from "react-native";
+import { ScrollView, StyleSheet, View } from "react-native";
+import { useTheme } from 'react-native-paper';
 
 // 模拟故障数据
 const faultData = [
@@ -77,6 +77,7 @@ export default function EquipmentFaultAlert() {
     faultCode: ''
   });
   const router = useRouter();
+  const theme = useTheme();
   
   useEffect(() => {
     // 默认展开第一个卡片
@@ -98,6 +99,17 @@ export default function EquipmentFaultAlert() {
   };
 
   const handleApplyFilter = () => {
+    // 打印筛选信息
+    console.log('=== 筛选信息 ===');
+    console.log('开始日期:', filterState.startDate ? filterState.startDate.toLocaleDateString('zh-CN') : '未设置');
+    console.log('结束日期:', filterState.endDate ? filterState.endDate.toLocaleDateString('zh-CN') : '未设置');
+    console.log('排序方式:', filterState.sortBy === 'time' ? '时间排序' : '等级排序');
+    console.log('故障等级:', filterState.severity === '' ? '全部' : 
+                filterState.severity === 'high' ? '高' :
+                filterState.severity === 'medium' ? '中' : '低');
+    console.log('故障代码:', filterState.faultCode || '未设置');
+    console.log('================');
+
     let filtered = [...faultData];
 
     // 按日期筛选
@@ -166,7 +178,7 @@ export default function EquipmentFaultAlert() {
       title="设备故障报警"
       drawerContent={FilterContent}
     >
-      <ThemedView style={styles.container}>
+      <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
         <ScrollView style={styles.scrollView}>
           {filteredData.map((fault) => (
             <FaultAlertCard
@@ -177,7 +189,7 @@ export default function EquipmentFaultAlert() {
             />
           ))}
         </ScrollView>
-      </ThemedView>
+      </View>
     </CustomDrawer>
   );
 }
@@ -185,7 +197,6 @@ export default function EquipmentFaultAlert() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
   },
   scrollView: {
     flex: 1,

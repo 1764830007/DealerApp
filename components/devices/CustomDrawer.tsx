@@ -1,6 +1,6 @@
 import { useRouter } from "expo-router";
 import React, { useRef } from "react";
-import { StyleSheet, View } from "react-native";
+import { View } from "react-native";
 import {
   Gesture,
   GestureDetector,
@@ -28,6 +28,20 @@ export default function CustomDrawer({ title, children, drawerContent }: DrawerP
     .runOnJS(true)
     .onStart(() => drawerRef.current?.openDrawer());
 
+  // 动态样式
+  const dynamicStyles = {
+    bar: {
+      backgroundColor: theme.colors.surface,
+      boxShadow: "rgba(0, 0, 0, 0.15) 1.95px 1.95px 2.6px",
+    },
+    drawerContainer: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      backgroundColor: theme.colors.surface,
+    },
+  };
+
   return (
     <GestureHandlerRootView>
       <ReanimatedDrawerLayout
@@ -39,7 +53,7 @@ export default function CustomDrawer({ title, children, drawerContent }: DrawerP
       >
         <View>
           {/* header bar of the equipment list  */}
-          <Appbar.Header style={styles.bar} elevated>
+          <Appbar.Header style={dynamicStyles.bar} elevated>
             <Appbar.BackAction
               onPress={() => router.dismissTo("/(tabs)/device")}
             />
@@ -57,16 +71,3 @@ export default function CustomDrawer({ title, children, drawerContent }: DrawerP
     </GestureHandlerRootView>
   );
 }
-
-const styles = StyleSheet.create({
-  bar: {
-    backgroundColor: "#f6f6f6",
-    boxShadow: "rgba(0, 0, 0, 0.15) 1.95px 1.95px 2.6px",
-  },
-  drawerContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#f6f6f6",
-  },
-});

@@ -31,15 +31,51 @@ export default function FaultAlertCard({ fault, isExpanded, onToggle }: FaultAle
     }
   };
 
+  // 动态样式
+  const dynamicStyles = {
+    cardTitleContainer: {
+      backgroundColor: theme.dark?theme.colors.surfaceVariant:'#e4ebf3',
+      minHeight: 30,
+      paddingVertical: 8,
+    },
+    cardTitle: {
+      fontSize: 14,
+      fontWeight: '600' as const,
+      color: theme.colors.onSurface,
+    },
+    cardContent: {
+      padding: 12,
+      backgroundColor: theme.colors.surface,
+    },
+    infoLabel: {
+      fontSize: 14,
+      color: theme.colors.onSurfaceVariant,
+      width: 100,
+      flexShrink: 0,
+      marginRight: 16,
+      textAlign: 'left' as const,
+      flexWrap: 'wrap' as const,
+    },
+    infoValue: {
+      fontSize: 14,
+      fontWeight: '500' as const,
+      color: theme.colors.onSurface,
+      flex: 1,
+      textAlign: 'left' as const,
+      flexWrap: 'wrap' as const,
+      flexShrink: 1,
+    },
+  };
+
   return (
-    <Card style={styles.card}>
+    <Card style={[styles.card, { borderBottomColor: theme.colors.outline }]}>
       <TouchableOpacity 
         onPress={() => onToggle(fault.id)}
         activeOpacity={0.7}
       >
         <Card.Title
           title={fault.equipmentName}
-          titleStyle={styles.cardTitle}
+          titleStyle={dynamicStyles.cardTitle}
           right={() => (
             <View style={[
               styles.statusTag,
@@ -50,32 +86,32 @@ export default function FaultAlertCard({ fault, isExpanded, onToggle }: FaultAle
               </Text>
             </View>
           )}
-          style={styles.cardTitleContainer}
+          style={dynamicStyles.cardTitleContainer}
         />
       </TouchableOpacity>
       
       {isExpanded && (
-        <Card.Content style={styles.cardContent}>
+        <Card.Content style={dynamicStyles.cardContent}>
           <View style={styles.infoRow}>
             <View style={styles.infoItem}>
-              <Text style={[styles.infoLabel,{color: theme.colors.onSurface}]}>报告时间：</Text>
-              <Text style={[styles.infoValue,{color: theme.colors.onSurface}]}>{new Date(fault.timestamp).toLocaleString()}</Text>
+              <Text style={dynamicStyles.infoLabel}>报告时间：</Text>
+              <Text style={dynamicStyles.infoValue}>{new Date(fault.timestamp).toLocaleString()}</Text>
             </View>
             <View style={styles.infoItem}>
-              <Text style={[styles.infoLabel,{color: theme.colors.onSurface}]}>报告地点：</Text>
-              <Text style={[styles.infoValue,{color: theme.colors.onSurface}]}>{fault.reportLocation}</Text>
+              <Text style={dynamicStyles.infoLabel}>报告地点：</Text>
+              <Text style={dynamicStyles.infoValue}>{fault.reportLocation}</Text>
             </View>
             <View style={styles.infoItem}>
-              <Text style={[styles.infoLabel,{color: theme.colors.onSurface}]}>故障代码SPN-PMI：</Text>
-              <Text style={[styles.infoValue,{color: theme.colors.onSurface}]}>{fault.faultCode}</Text>
+              <Text style={dynamicStyles.infoLabel}>故障代码SPN-PMI：</Text>
+              <Text style={dynamicStyles.infoValue}>{fault.faultCode}</Text>
             </View>
             <View style={styles.infoItem}>
-              <Text style={[styles.infoLabel,{color: theme.colors.onSurface}]}>故障内容：</Text>
-              <Text style={[styles.infoValue,{color: theme.colors.onSurface}]}>{fault.faultDescription}</Text>
+              <Text style={dynamicStyles.infoLabel}>故障内容：</Text>
+              <Text style={dynamicStyles.infoValue}>{fault.faultDescription}</Text>
             </View>
             <View style={styles.infoItem}>
-              <Text style={[styles.infoLabel,{color: theme.colors.onSurface}]}>维修指导：</Text>
-              <Text style={[styles.infoValue,{color: theme.colors.onSurface}]}>{fault.repairGuide}</Text>
+              <Text style={dynamicStyles.infoLabel}>维修指导：</Text>
+              <Text style={dynamicStyles.infoValue}>{fault.repairGuide}</Text>
             </View>
           </View>
         </Card.Content>
@@ -90,22 +126,7 @@ const styles = StyleSheet.create({
     borderRadius: 0,
     elevation: 0,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
     margin: 10,
-  },
-  cardTitleContainer: {
-    backgroundColor: '#e8f4fd', // 浅蓝色标题栏背景
-    minHeight: 30, // 设置最小高度
-    paddingVertical: 8, // 减少垂直内边距
-  },
-  cardTitle: {
-    fontSize: 14, // 减小字体大小
-    fontWeight: '600',
-    color: '#000',
-  },
-  cardContent: {
-    padding: 12,
-    backgroundColor: '#fff',
   },
   statusTagText: {
     fontSize: 12,
@@ -121,30 +142,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: 12,
   },
-  infoLabel: {
-    fontSize: 14,
-    color: '#666',
-    width: 100, // 固定宽度
-    flexShrink: 0, // 防止压缩
-    marginRight: 16, // 与数据列隔开距离
-    textAlign: 'left', // 左对齐
-    flexWrap: 'wrap', // 支持文本换行
-  },
-  infoValue: {
-    fontSize: 14,
-    fontWeight: '500',
-    flex: 1, // 占据剩余空间
-    textAlign: 'left', // 左对齐
-    flexWrap: 'wrap', // 支持文本换行
-    flexShrink: 1, // 允许压缩
-  },
   infoRow: {
     flex: 1,
     paddingLeft: 10,
   },
   infoItem: {
     flexDirection: 'row',
-    alignItems: 'flex-start', // 改为顶部对齐，支持多行文本
+    alignItems: 'flex-start',
     minHeight: 40,
     paddingVertical: 5,
   },

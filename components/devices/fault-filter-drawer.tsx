@@ -1,20 +1,18 @@
 import DateTimePicker from '@react-native-community/datetimepicker';
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
-  Animated, Dimensions, FlatList,
+  Animated, Dimensions,
   Modal,
   ScrollView, StyleSheet, Text, TextInput, TouchableOpacity,
   TouchableWithoutFeedback,
   View
 } from 'react-native';
-import { Button, RadioButton, useTheme } from 'react-native-paper';
+import { Button, useTheme } from 'react-native-paper';
+// 引入 @quidone/react-native-wheel-picker
+import WheelPicker from '@quidone/react-native-wheel-picker';
 
-// 获取屏幕尺寸（Expo 兼容）
-const { height: screenHeight, width: screenWidth } = Dimensions.get('window');
-// 单个选项高度（用于计算滚动位置）
-const ITEM_HEIGHT = 50;
-// 可见区域显示的选项数量
-const VISIBLE_ITEMS = 5;
+// 获取屏幕尺寸
+const { height: screenHeight } = Dimensions.get('window');
 
 export interface FilterState {
   startDate: Date | null;
@@ -41,34 +39,41 @@ export default function FaultFilterDrawer({
   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
   const [showEndDatePicker, setShowEndDatePicker] = useState(false);
   const [showSortModal, setShowSortModal] = useState(false);
-  const [tempSortBy, setTempSortBy] = useState<FilterState['sortBy']>(filterState.sortBy);
-
-  // 动画与滚动相关
-  const slideAnim = useRef(new Animated.Value(screenHeight)).current;
-  const flatListRef = useRef<FlatList>(null);
-  const scrollY = useRef(new Animated.Value(0)).current;
-
-  // 排序选项数据
-  const sortOptions = [
-    { key: 'time', text: '时间排序' },
-    { key: 'severity', text: '等级排序' },
+  const [showSeverityModal, setShowSeverityModal] = useState(false);
+  
+  // 排序选择器数据（模仿示例的 {value, label} 结构）
+  const sortData = [
+    { value: 'time', label: '时间排序' },
+    { value: 'severity', label: '等级排序' },
   ];
+  
+  // 故障等级选择器数据
+  const severityData = [
+    { value: '', label: '全部' },
+    { value: 'high', label: '高' },
+    { value: 'medium', label: '中' },
+    { value: 'low', label: '低' },
+  ];
+  
+  // 选中值管理（与示例一致的 useState 用法）
+  const [selectedSortValue, setSelectedSortValue] = useState<FilterState['sortBy']>(
+    filterState.sortBy
+  );
+  const [selectedSeverityValue, setSelectedSeverityValue] = useState<FilterState['severity']>(
+    filterState.severity
+  );
 
-  // 计算初始滚动位置（确保默认选项在选中区域）
+  // 弹窗动画
+  const slideAnim = useRef(new Animated.Value(screenHeight)).current;
+
+  // 同步外部筛选状态到选择器
   useEffect(() => {
-    const initialIndex = sortOptions.findIndex(item => item.key === tempSortBy);
-    if (initialIndex !== -1 && flatListRef.current) {
-      flatListRef.current.scrollToIndex({
-        index: initialIndex,
-        viewPosition: 0.5, // 居中显示
-        animated: false
-      });
-    }
-  }, [tempSortBy, showSortModal]);
+    setSelectedSortValue(filterState.sortBy);
+    setSelectedSeverityValue(filterState.severity);
+  }, [filterState.sortBy, filterState.severity]);
 
   // 打开排序弹窗
   const openSortModal = () => {
-    setTempSortBy(filterState.sortBy);
     setShowSortModal(true);
     Animated.timing(slideAnim, {
       toValue: 0,
@@ -90,20 +95,35 @@ export default function FaultFilterDrawer({
 
   // 确认排序选择
   const confirmSort = () => {
-    onFilterChange({ ...filterState, sortBy: tempSortBy });
+    onFilterChange({ ...filterState, sortBy: selectedSortValue });
     closeSortModal();
   };
 
-  // 处理滚动结束后的选择（核心：滑动选择逻辑）
-  const handleScrollEnd = (event: any) => {
-    // 计算当前滚动位置对应的选项索引
-    const contentOffsetY = event.nativeEvent.contentOffset.y;
-    const selectedIndex = Math.round(contentOffsetY / ITEM_HEIGHT);
-    
-    // 更新选中状态（边界检查）
-    if (selectedIndex >= 0 && selectedIndex < sortOptions.length) {
-      setTempSortBy(sortOptions[selectedIndex].key as 'time' | 'severity');
-    }
+  // 打开故障等级弹窗
+  const openSeverityModal = () => {
+    setShowSeverityModal(true);
+    Animated.timing(slideAnim, {
+      toValue: 0,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  // 关闭故障等级弹窗
+  const closeSeverityModal = () => {
+    Animated.timing(slideAnim, {
+      toValue: screenHeight,
+      duration: 300,
+      useNativeDriver: true,
+    }).start(() => {
+      setShowSeverityModal(false);
+    });
+  };
+
+  // 确认故障等级选择
+  const confirmSeverity = () => {
+    onFilterChange({ ...filterState, severity: selectedSeverityValue });
+    closeSeverityModal();
   };
 
   // 日期格式化
@@ -141,59 +161,6 @@ export default function FaultFilterDrawer({
       faultCode: value
     });
   };
-
-  // 渲染单个选项
-  const renderOption = ({ item, index }: { item: any; index: number }) => {
-    // 计算选项与中间选中线的距离，动态改变透明度和缩放
-    const inputRange = [
-      (index - 1) * ITEM_HEIGHT,
-      index * ITEM_HEIGHT,
-      (index + 1) * ITEM_HEIGHT
-    ];
-
-    // 选中项放大并高亮，非选中项淡化
-    const opacity = scrollY.interpolate({
-      inputRange,
-      outputRange: [0.4, 1, 0.4],
-      extrapolate: 'clamp'
-    });
-
-    const scale = scrollY.interpolate({
-      inputRange,
-      outputRange: [0.9, 1.1, 0.9],
-      extrapolate: 'clamp'
-    });
-
-    const isSelected = tempSortBy === item.key;
-
-    return (
-      <Animated.View
-        style={[
-          styles.optionItem,
-          { 
-            height: ITEM_HEIGHT,
-            opacity,
-            transform: [{ scale }]
-          }
-        ]}
-      >
-        <Text style={[
-          styles.optionText,
-          { color: theme.colors.onSurface },
-          isSelected && styles.selectedOptionText
-        ]}>
-          {item.text}
-        </Text>
-      </Animated.View>
-    );
-  };
-
-  // 修复 scrollToIndex 报错：定义每个选项的布局信息
-  const getItemLayout = (data: any[], index: number) => ({
-    length: ITEM_HEIGHT, // 每个选项的高度
-    offset: ITEM_HEIGHT * index, // 第 index 个选项的偏移量
-    index, // 选项索引
-  });
 
   return (
     <ScrollView style={[styles.container, { backgroundColor: theme.colors.background }]}>
@@ -264,30 +231,22 @@ export default function FaultFilterDrawer({
           </TouchableOpacity>
         </View>
 
-        {/* 故障等级 */}
+        {/* 故障等级（触发按钮） */}
         <View style={styles.filterItem}>
           <Text style={[styles.label, { color: theme.colors.onSurface }]}>故障等级</Text>
-          <RadioButton.Group 
-            onValueChange={handleSeverityChange} 
-            value={filterState.severity}
+          <TouchableOpacity 
+            style={[styles.dateButton, { 
+              borderColor: theme.colors.outline,
+              backgroundColor: theme.colors.surface
+            }]}
+            onPress={openSeverityModal}
           >
-            <View style={styles.radioItem}>
-              <RadioButton value="high" />
-              <Text style={[styles.radioLabel, { color: theme.colors.onSurface }]}>高</Text>
-            </View>
-            <View style={styles.radioItem}>
-              <RadioButton value="medium" />
-              <Text style={[styles.radioLabel, { color: theme.colors.onSurface }]}>中</Text>
-            </View>
-            <View style={styles.radioItem}>
-              <RadioButton value="low" />
-              <Text style={[styles.radioLabel, { color: theme.colors.onSurface }]}>低</Text>
-            </View>
-            <View style={styles.radioItem}>
-              <RadioButton value="" />
-              <Text style={[styles.radioLabel, { color: theme.colors.onSurface }]}>全部</Text>
-            </View>
-          </RadioButton.Group>
+            <Text style={[styles.dateButtonText, { color: theme.colors.onSurface }]}>
+              {filterState.severity === '' ? '全部' : 
+               filterState.severity === 'high' ? '高' :
+               filterState.severity === 'medium' ? '中' : '低'}
+            </Text>
+          </TouchableOpacity>
         </View>
 
         {/* 故障代码 */}
@@ -324,7 +283,7 @@ export default function FaultFilterDrawer({
           </Button>
         </View>
 
-        {/* 排序选择弹窗（上下滑动选择版） */}
+        {/* 排序选择弹窗（@quidone/react-native-wheel-picker 版本） */}
         <Modal
           visible={showSortModal}
           transparent={true}
@@ -366,37 +325,73 @@ export default function FaultFilterDrawer({
               </TouchableOpacity>
             </View>
 
-            {/* 中间滑动选择区域（带选中引导线） */}
-            <View style={styles.pickerContainer}>
-              {/* 上引导线 */}
-              <View style={[styles.guideLine, { 
-                top: (VISIBLE_ITEMS / 2 - 0.5) * ITEM_HEIGHT 
-              }]} />
-              
-              {/* 可滚动的选项列表 */}
-              <Animated.FlatList
-                ref={flatListRef}
-                data={sortOptions}
-                renderItem={renderOption}
-                keyExtractor={(item) => item.key}
-                getItemLayout={getItemLayout} // 关键：解决 scrollToIndex 报错
-                onScroll={Animated.event(
-                  [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-                  { useNativeDriver: true }
-                )}
-                onMomentumScrollEnd={handleScrollEnd}
-                scrollEventThrottle={16}
-                snapToInterval={ITEM_HEIGHT} // 对齐到选项边界
-                decelerationRate="fast" // 快速减速，便于精准选择
-                showsVerticalScrollIndicator={false}
-                contentContainerStyle={styles.listContent}
-              />
-              
-              {/* 下引导线 */}
-              <View style={[styles.guideLine, { 
-                top: (VISIBLE_ITEMS / 2 + 0.5) * ITEM_HEIGHT 
-              }]} />
+            {/* 核心：Wheel Picker 组件（完全模仿示例代码风格） */}
+            <WheelPicker
+              data={sortData}  // 数据源：[{value, label}, ...]
+              value={selectedSortValue}  // 选中值
+              // 选择变化回调（模仿示例的 {item} 参数结构）
+              onValueChanged={({ item }) => setSelectedSortValue(item.value as 'time' | 'severity')}
+              enableScrollByTapOnItem={true}  // 支持点击选项快速滚动
+              // 样式配置
+              itemHeight={50}
+              style={styles.wheelPicker}
+            />
+          </Animated.View>
+        </Modal>
+
+        {/* 故障等级选择弹窗（@quidone/react-native-wheel-picker 版本） */}
+        <Modal
+          visible={showSeverityModal}
+          transparent={true}
+          animationType="none"
+          onRequestClose={closeSeverityModal}
+        >
+          {/* 半透明遮罩 */}
+          <TouchableWithoutFeedback onPress={closeSeverityModal}>
+            <View style={styles.modalOverlay} />
+          </TouchableWithoutFeedback>
+
+          {/* 弹窗内容 */}
+          <Animated.View
+            style={[
+              styles.modalContainer,
+              { 
+                transform: [{ translateY: slideAnim }],
+                backgroundColor: theme.colors.background
+              }
+            ]}
+          >
+            {/* 顶部按钮栏 */}
+            <View style={styles.modalHeader}>
+              <TouchableOpacity 
+                style={styles.headerButton}
+                onPress={closeSeverityModal}
+              >
+                <Text style={[styles.headerText, { color: theme.colors.onSurfaceVariant }]}>
+                  取消
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.headerButton}
+                onPress={confirmSeverity}
+              >
+                <Text style={[styles.headerText, { color: theme.colors.primary }]}>
+                  确认
+                </Text>
+              </TouchableOpacity>
             </View>
+
+            {/* 核心：Wheel Picker 组件（完全模仿示例代码风格） */}
+            <WheelPicker
+              data={severityData}  // 数据源：[{value, label}, ...]
+              value={selectedSeverityValue}  // 选中值
+              // 选择变化回调（模仿示例的 {item} 参数结构）
+              onValueChanged={({ item }) => setSelectedSeverityValue(item.value as 'high' | 'medium' | 'low' | '')}
+              enableScrollByTapOnItem={true}  // 支持点击选项快速滚动
+              // 样式配置
+              itemHeight={50}
+              style={styles.wheelPicker}
+            />
           </Animated.View>
         </Modal>
       </View>
@@ -474,12 +469,13 @@ const styles = StyleSheet.create({
     right: 0,
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
-    paddingBottom: 20,
+    padding: 20,
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    padding: 16,
+    marginBottom: 16,
+    paddingBottom: 8,
     borderBottomWidth: 1,
     borderBottomColor: '#ccc',
   },
@@ -490,33 +486,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
   },
-
-  // 滑动选择器样式
-  pickerContainer: {
-    height: ITEM_HEIGHT * VISIBLE_ITEMS, // 可见区域高度 = 单选项高度 × 可见数量
-    position: 'relative',
-    overflow: 'hidden',
-  },
-  guideLine: {
-    height: 1,
-    width: '80%',
-    backgroundColor: '#888',
-    position: 'absolute',
-    left: '10%',
-    zIndex: 10,
-  },
-  listContent: {
-    paddingVertical: (VISIBLE_ITEMS / 2 - 0.5) * ITEM_HEIGHT, // 上下留白，确保选项能滚到中间
-  },
-  optionItem: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  optionText: {
-    fontSize: 18,
-  },
-  selectedOptionText: {
-    color: 'black',
-    fontWeight: '600',
+  // Wheel Picker 样式
+  wheelPicker: {
+    width: '100%',
+    height: 200,
   },
 });

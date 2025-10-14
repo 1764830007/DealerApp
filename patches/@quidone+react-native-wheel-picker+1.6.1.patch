@@ -1,0 +1,13 @@
+diff --git a/node_modules/@quidone/react-native-wheel-picker/src/base/picker/hooks/useValueEventsEffect.ts b/node_modules/@quidone/react-native-wheel-picker/src/base/picker/hooks/useValueEventsEffect.ts
+index 1234567..abcdefg 100644
+--- a/node_modules/@quidone/react-native-wheel-picker/src/base/picker/hooks/useValueEventsEffect.ts
++++ b/node_modules/@quidone/react-native-wheel-picker/src/base/picker/hooks/useValueEventsEffect.ts
+@@ -1,7 +1,7 @@
+ import {useEffect, useRef} from 'react';
+ import type {Animated} from 'react-native';
+ import {useStableCallback} from '@rozhkov/react-useful-hooks';
+-import {getPageIndex} from '../../../utils/scrolling';
++import {getPageIndex} from '../../../utils/scrolling/index';
+ const useValueEventsEffect = <ItemT>(
+   {
+     valueIndex,

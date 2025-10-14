@@ -35,6 +35,7 @@ export default function CustomDrawer({ title, children, drawerContent }: DrawerP
         renderNavigationView={ () => drawerContent?.() }
         drawerPosition={DrawerPosition.RIGHT}
         drawerType={DrawerType.SLIDE}
+        drawerWidth={300} // 设置抽屉宽度为屏幕宽度的三分之二
       >
         <View>
           {/* header bar of the equipment list  */}

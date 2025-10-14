@@ -1,9 +1,10 @@
+import CustomDrawer from '@/components/devices/CustomDrawer';
 import FaultAlertCard from '@/components/devices/fault-alert-card';
+import FaultFilterDrawer, { FilterState } from '@/components/devices/fault-filter-drawer';
 import { ThemedView } from '@/components/themed-view';
 import { useRouter } from "expo-router";
 import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet } from "react-native";
-import { Appbar } from "react-native-paper";
 
 // 模拟故障数据
 const faultData = [
@@ -39,20 +40,50 @@ const faultData = [
     status: "resolved",
     reportLocation: "现场B",
     repairGuide: "检查传感器接线及通讯模块"
+  },
+  {
+    id: 4,
+    equipmentName: "82800126",
+    faultCode: "4201-4",
+    faultDescription: "曲轴位置传感器故障",
+    severity: "high",
+    timestamp: "2025-10-13 09:30:15",
+    status: "pending",
+    reportLocation: "维修站",
+    repairGuide: "检查曲轴位置传感器接线和信号"
+  },
+  {
+    id: 5,
+    equipmentName: "82800127",
+    faultCode: "W001",
+    faultDescription: "水温过高",
+    severity: "medium",
+    timestamp: "2025-10-12 14:20:30",
+    status: "acknowledged",
+    reportLocation: "现场C",
+    repairGuide: "检查冷却系统和节温器"
   }
 ];
 
 // 设备故障报警
 export default function EquipmentFaultAlert() {
   const [expandedCards, setExpandedCards] = useState<number[]>([]);
+  const [filteredData, setFilteredData] = useState(faultData);
+  const [filterState, setFilterState] = useState<FilterState>({
+    startDate: null,
+    endDate: null,
+    sortBy: 'time',
+    severity: '',
+    faultCode: ''
+  });
   const router = useRouter();
   
   useEffect(() => {
     // 默认展开第一个卡片
-    if (faultData.length > 0) {
-      setExpandedCards([faultData[0].id]);
+    if (filteredData.length > 0) {
+      setExpandedCards([filteredData[0].id]);
     }
-  }, []);
+  }, [filteredData]);
 
   const toggleCard = (id: number) => {
     setExpandedCards(prev => 
@@ -62,31 +93,96 @@ export default function EquipmentFaultAlert() {
     );
   };
 
+  const handleFilterChange = (newFilter: FilterState) => {
+    setFilterState(newFilter);
+  };
+
+  const handleApplyFilter = () => {
+    let filtered = [...faultData];
+
+    // 按日期筛选
+    if (filterState.startDate) {
+      filtered = filtered.filter(fault => {
+        const faultDate = new Date(fault.timestamp);
+        return faultDate >= filterState.startDate!;
+      });
+    }
+
+    if (filterState.endDate) {
+      filtered = filtered.filter(fault => {
+        const faultDate = new Date(fault.timestamp);
+        return faultDate <= filterState.endDate!;
+      });
+    }
+
+    // 按故障等级筛选
+    if (filterState.severity) {
+      filtered = filtered.filter(fault => fault.severity === filterState.severity);
+    }
+
+    // 按故障代码模糊搜索
+    if (filterState.faultCode) {
+      filtered = filtered.filter(fault => 
+        fault.faultCode.toLowerCase().includes(filterState.faultCode.toLowerCase())
+      );
+    }
+
+    // 排序
+    if (filterState.sortBy === 'time') {
+      // 时间倒序（由近及远）
+      filtered.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    } else if (filterState.sortBy === 'severity') {
+      // 等级排序（高-中-低）
+      const severityOrder = { high: 3, medium: 2, low: 1 };
+      filtered.sort((a, b) => severityOrder[b.severity as keyof typeof severityOrder] - severityOrder[a.severity as keyof typeof severityOrder]);
+    }
+
+    setFilteredData(filtered);
+  };
+
+  const handleResetFilter = () => {
+    const resetFilter: FilterState = {
+      startDate: null,
+      endDate: null,
+      sortBy: 'time',
+      severity: '',
+      faultCode: ''
+    };
+    setFilterState(resetFilter);
+    setFilteredData(faultData);
+  };
+
+  const FilterContent = () => (
+    <FaultFilterDrawer
+      filterState={filterState}
+      onFilterChange={handleFilterChange}
+      onApplyFilter={handleApplyFilter}
+      onResetFilter={handleResetFilter}
+    />
+  );
+
   return (
-    <ThemedView style={styles.container}>
-      <Appbar.Header style={[styles.bar]}>
-        <Appbar.BackAction onPress={() => router.back()} />
-        <Appbar.Content title="设备管理" titleStyle={{ color: '#FFFFFF' }} />
-      </Appbar.Header>
-      <ScrollView style={styles.scrollView}>
-        {faultData.map((fault) => (
-          <FaultAlertCard
-            key={fault.id}
-            fault={fault}
-            isExpanded={expandedCards.includes(fault.id)}
-            onToggle={toggleCard}
-          />
-        ))}
-      </ScrollView>
-    </ThemedView>
+    <CustomDrawer
+      title="设备故障报警"
+      drawerContent={FilterContent}
+    >
+      <ThemedView style={styles.container}>
+        <ScrollView style={styles.scrollView}>
+          {filteredData.map((fault) => (
+            <FaultAlertCard
+              key={fault.id}
+              fault={fault}
+              isExpanded={expandedCards.includes(fault.id)}
+              onToggle={toggleCard}
+            />
+          ))}
+        </ScrollView>
+      </ThemedView>
+    </CustomDrawer>
   );
 }
 
 const styles = StyleSheet.create({
-  bar: {
-    backgroundColor: "#274D7C",
-    boxShadow: "rgba(0, 0, 0, 0.15) 1.95px 1.95px 2.6px",
-  },
   container: {
     flex: 1,
     backgroundColor: '#fff',

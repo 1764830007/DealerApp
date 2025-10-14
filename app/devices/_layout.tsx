@@ -4,34 +4,34 @@ export default function DeviceLayout() {
   return (
     <Stack screenOptions={{ animation: "ios_from_right", headerShown: false  }}>
       <Stack.Screen
-        name="devices/equipment-list"
+        name="equipment-list"
         options={{ headerShown: false }}
       />
       <Stack.Screen
-        name="devices/equipment-list/[id]"
+        name="equipment-list/[id]"
         options={{ headerShown: false }}
       />
       <Stack.Screen
-        name="devices/equipment-report"
+        name="equipment-report"
         options={{ headerShown: false }}
       />
       <Stack.Screen
-        name="devices/equipment-fault-alert"
+        name="equipment-fault-alert"
         options={{ headerShown: false }}
       />
       <Stack.Screen
-        name="devices/equipment-fence"
+        name="equipment-fence"
         options={{ headerShown: false }}
       />
       <Stack.Screen
-        name="devices/equipment-bind-list"
+        name="equipment-bind-list"
         options={{ headerShown: false }}
       />
       <Stack.Screen
-        name="devices/equipment-create-bind"
+        name="equipment-create-bind"
         options={{ headerShown: false }}
       />
-      <Stack.Screen name="devices/equipment-config" options={ {headerShown: false } } />
+      <Stack.Screen name="equipment-config" options={ {headerShown: false } } />
       
     </Stack>
   );

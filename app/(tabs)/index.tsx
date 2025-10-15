@@ -50,6 +50,7 @@ const Index = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [permissionsLoaded, setPermissionsLoaded] = useState(false); // 新增：权限加载完成状态
 
   // 1. 新增：三类工单数量状态 + 待完成总数 + 最新工单状态 + 全部工单状态
   const [pendingAssignmentCount, setPendingAssignmentCount] = useState(0); // 待分配（segStatusIds=1）
@@ -59,7 +60,6 @@ const Index = () => {
   const [latestWorkOrder, setLatestWorkOrder] = useState<WorkOrder | null>(null); // 最新工单
   const [hasExecutingPermission, setHasExecutingPermission] = useState(false); // 是否有执行权限
   const [workOrderTitle, setWorkOrderTitle] = useState(t('home.allOrder')); // 工单区域标题
-  const [hasCreateOrAssignPermission, setHasCreateOrAssignPermission] = useState(false); // 是否有申请或派工权限
 
   // 加载权限信息
   const loadPermissions = async () => {
@@ -80,17 +80,27 @@ const Index = () => {
       setHasWorkOrderAssign(hasAssign === 'true');
       setHasWorkOrderExecute(hasExecute === 'true');
       setWorkOrderPermissionType(permissionType || 'none');
-
       
+      // 设置权限加载完成状态
+      setPermissionsLoaded(true);
+
+      console.log("权限加载完成:", {
+        hasWorkOrderCreate: hasCreate === 'true',
+        hasWorkOrderAssign: hasAssign === 'true',
+        hasWorkOrderExecute: hasExecute === 'true',
+        workOrderPermissionType: permissionType || 'none'
+      });
     } catch (error) {
       console.error('❌ Error loading permissions:', error);
+      // 即使出错也要设置权限加载完成状态
+      setPermissionsLoaded(true);
     }
   };
 
   // 根据权限获取待派工数量的API参数配置
   const getPendingAssignmentParams = (): any => {
-    const currentUser = 'philistest'; // 当前用户名，可以从token中获取
-    
+    const currentUser = AsyncStorage.getItem('userLoginName'); // 当前用户名，可以从token中获取
+    console.log('待派工权限状态', hasWorkOrderCreate, hasWorkOrderAssign, hasWorkOrderExecute);
     // 申请权限
     if (hasWorkOrderCreate && !hasWorkOrderAssign && !hasWorkOrderExecute) {
       console.log('获取待派工参数 - 申请权限');
@@ -349,10 +359,10 @@ const Index = () => {
       let requestParams: any;
       
       requestParams = getPendingAssignmentParams();
-      
+      console.log(`待派工请求参数 `, requestParams);
       const response = await api.post<any>('/services/app/WorkOrderService/GetWorkOrdersByParameters', requestParams);
       const data = response.data;
-      //console.log(`获取segStatusId=${segStatusId}的API响应数据:`, data);
+      console.log(`获取segStatusId=${segStatusId}的API响应数据:`, data);
 
       // 验证响应有效性：成功且有result.data，则orderSegNo数量 = data数组长度
       if (data.success && data.result?.data) {
@@ -583,12 +593,9 @@ const Index = () => {
       setLatestWorkOrder(null);
     }
   };
-
-  // 9. 新增：更新权限相关状态
+  // 根据权限更新用户权限状态和工单标题
   const updateUserPermissions = () => {
-    // 检查是否有申请或派工权限
-    const hasCreateOrAssign = hasWorkOrderCreate || hasWorkOrderAssign;
-    setHasCreateOrAssignPermission(hasCreateOrAssign);
+ 
     
     // 根据权限设置工单标题 - 按照新的权限逻辑
     if (hasWorkOrderCreate && !hasWorkOrderAssign && !hasWorkOrderExecute) {
@@ -618,7 +625,7 @@ const Index = () => {
     }
   };
 
-  // 10. 新增：批量获取三类数量并计算总和 + 最新工单 + 权限更新
+  // 批量获取三类数量并计算总和 + 最新工单 + 权限更新
   const fetchAllPendingCounts = async () => {
     // 更新权限状态
     updateUserPermissions();
@@ -648,7 +655,11 @@ const Index = () => {
       
       let workOrdersData: WorkOrder[] = [];
       let displayMessage = '';
-
+      console.log('当前权限状态:', {
+        hasWorkOrderCreate,
+        hasWorkOrderAssign,
+        hasWorkOrderExecute
+      });
       // 1. 仅申请权限
       if (hasWorkOrderCreate && !hasWorkOrderAssign && !hasWorkOrderExecute) {
         //console.log('获取工单数据 - 仅申请权限');
@@ -881,14 +892,20 @@ const Index = () => {
     }
   };
 
-  // 5. 组件挂载时：加载权限 + 工单列表 + 三类统计数量
+  // 5. 组件挂载时：先加载权限
   useEffect(() => {
     const initData = async () => {
       await loadPermissions();
-      await Promise.all([fetchWorkOrdersByPermission(), fetchAllPendingCounts()]);
     };
     initData();
   }, []);
+
+  // 6. 当权限加载完成后，再加载其他数据
+  useEffect(() => {
+    if (permissionsLoaded) {
+      Promise.all([fetchWorkOrdersByPermission(), fetchAllPendingCounts()]);
+    }
+  }, [permissionsLoaded]);
 
   // 日期格式化函数
   const formatDate = (dateString: string): string => {
@@ -909,6 +926,51 @@ const Index = () => {
     setRefreshing(true);
     Promise.all([fetchWorkOrdersByPermission(), fetchAllPendingCounts()])
       .finally(() => setRefreshing(false));
+  };
+
+  // 根据权限类型获取无数据时的显示消息
+  const getNoDataMessage = (): string => {
+    if (hasWorkOrderCreate && !hasWorkOrderAssign && !hasWorkOrderExecute) {
+      // 申请权限
+      return locale === 'zh' 
+        ? '您目前没有在申请中的工单' 
+        : 'You do not have any work order applications';
+    } else if (!hasWorkOrderCreate && hasWorkOrderAssign && !hasWorkOrderExecute) {
+      // 派工权限
+      return locale === 'zh' 
+        ? '您目前没有在申请中的工单' 
+        : 'You do not have any work order applications';
+    } else if (!hasWorkOrderCreate && !hasWorkOrderAssign && hasWorkOrderExecute) {
+      // 执行权限
+      return locale === 'zh' 
+        ? '您目前没有在执行中的工单，请选择待出发的工单进行出工' 
+        : 'You do not have any work order being executed right now，please select an new order for departure';
+    } else if (hasWorkOrderCreate && hasWorkOrderAssign && !hasWorkOrderExecute) {
+      // 申请+派工权限
+      return locale === 'zh' 
+        ? '您目前没有待派工的工单' 
+        : 'You do not have any work order for allocation';
+    } else if (hasWorkOrderCreate && !hasWorkOrderAssign && hasWorkOrderExecute) {
+      // 申请+执行权限
+      return locale === 'zh' 
+        ? '您目前没有在执行中的工单，请选择待出发的工单进行出工' 
+        : 'You do not have any work order being executed right now，please select an new order for departure';
+    } else if (!hasWorkOrderCreate && hasWorkOrderAssign && hasWorkOrderExecute) {
+      // 派工+执行权限
+      return locale === 'zh' 
+        ? '您目前没有在执行中的工单，请选择待出发的工单进行出工' 
+        : 'You do not have any work order being executed right now，please select an new order for departure';
+    } else if (hasWorkOrderCreate && hasWorkOrderAssign && hasWorkOrderExecute) {
+      // 申请+派工+执行权限
+      return locale === 'zh' 
+        ? '您目前没有在执行中的工单，请选择待出发的工单进行出工' 
+        : 'You do not have any work order being executed right now，please select an new order for departure';
+    } else {
+      // 默认情况
+      return locale === 'zh' 
+        ? '暂无工单数据' 
+        : 'No work order data';
+    }
   };
 
   // 6. 下拉刷新时：同步刷新列表 + 统计数量
@@ -969,25 +1031,23 @@ const Index = () => {
               <Text style={[styles.statLabel, { color: theme.colors.outline }]}>{t('home.inProgress')}</Text>
             </View>
           </View>
-          {/* 最新工单提示区域 - 根据执行权限显示不同内容 */}
-          {hasExecutingPermission && (
-            <View style={[{ backgroundColor: theme.colors.primary, margin: 12, borderRadius: 8, padding: 8 }]}>
-              {latestWorkOrder ? (
-                <View style={styles.firstWorkOrderInfo}>
-                  <Text style={[styles.statsTipText, { color: '#fff', fontWeight: 'bold' }]}>
-                    派单工号: {latestWorkOrder.code}
-                  </Text>
-                  <Text style={[styles.statsTipText, { color: '#fff', marginTop: 4 }]}>
-                    {latestWorkOrder.status}
-                  </Text>
-                </View>
-              ) : (
-                <Text style={[styles.statsTipText, { color: '#fff', textAlign: 'center' }]}>
-                  您目前没有在执行中的工单，请选择待出发的工单进行出工
+          {/* 最新工单提示区域 - 任何权限都可以看到，根据权限类型显示不同内容 */}
+          <View style={[{ backgroundColor: theme.colors.primary, margin: 12, borderRadius: 8, padding: 8 }]}>
+            {latestWorkOrder ? (
+              <View style={styles.firstWorkOrderInfo}>
+                <Text style={[styles.statsTipText, { color: '#fff', fontWeight: 'bold' }]}>
+                  派单工号: {latestWorkOrder.code}
                 </Text>
-              )}
-            </View>
-          )}
+                <Text style={[styles.statsTipText, { color: '#fff', marginTop: 4 }]}>
+                  {latestWorkOrder.status}
+                </Text>
+              </View>
+            ) : (
+              <Text style={[styles.statsTipText, { color: '#fff', textAlign: 'center' }]}>
+                {getNoDataMessage()}
+              </Text>
+            )}
+          </View>
         </View>
 
         {/* 功能按钮区 */}

@@ -213,6 +213,8 @@ class AuthService {
           }
         }
 
+        console.log('Dealer permissions:', dealerInfo.permissions);
+
         // 存储工作订单权限信息
         await this.storeWorkOrderPermissions(dealerInfo.permissions);
 
@@ -273,10 +275,10 @@ class AuthService {
         { key: 'workOrderPermissionType', value: workOrderPermissionType },
       ];
 
-      console.log("AsyncStorage.getItem('hasWorkOrderCreate'):",AsyncStorage.getItem('hasWorkOrderCreate'))
-      console.log("AsyncStorage.getItem('hasWorkOrderAssign'):",AsyncStorage.getItem('hasWorkOrderAssign'))
-      console.log("AsyncStorage.getItem('hasWorkOrderExecute'):",AsyncStorage.getItem('hasWorkOrderExecute'))
-      console.log("AsyncStorage.getItem('workOrderPermissionType'):",AsyncStorage.getItem('workOrderPermissionType'))
+      console.log("AsyncStorage.getItem('hasWorkOrderCreate'):", await AsyncStorage.getItem('hasWorkOrderCreate'))
+      console.log("AsyncStorage.getItem('hasWorkOrderAssign'):", await AsyncStorage.getItem('hasWorkOrderAssign'))
+      console.log("AsyncStorage.getItem('hasWorkOrderExecute'):", await AsyncStorage.getItem('hasWorkOrderExecute'))
+      console.log("AsyncStorage.getItem('workOrderPermissionType'):", await AsyncStorage.getItem('workOrderPermissionType'))
 
 
       for (const op of permissionStorageOperations) {

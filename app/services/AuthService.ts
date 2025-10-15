@@ -60,6 +60,7 @@ class AuthService {
         username: callBackInfo.UserLoginName,
         timestamp: new Date().toISOString()
       });
+      console.log('Full login data:', callBackInfo);
       
       // Store each credential individually with verification
       const storageOperations = [
@@ -67,7 +68,9 @@ class AuthService {
         { key: 'refreshToken', value: callBackInfo.RefreshToken },
         { key: 'userLoginName', value: callBackInfo.UserLoginName },
         { key: 'tokenExpiration', value: callBackInfo.TokenExpiration.toString() },
-        { key: 'refreshTokenExpiration', value: callBackInfo.RefreshTokenExpiration.toString() }
+        { key: 'refreshTokenExpiration', value: callBackInfo.RefreshTokenExpiration.toString() },
+        { key: 'phoneNumber', value: callBackInfo.PhoneNumber },
+        { key: 'email', value: callBackInfo.Email },
       ];
 
       for (const op of storageOperations) {

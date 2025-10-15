@@ -1,11 +1,11 @@
 import BasicData from "@/components/devices/equipment-card-detail/basic-data";
 import RealTimeData from "@/components/devices/equipment-card-detail/realtime-data";
+import UseAnalysis from "@/components/devices/use-analysis";
 import { useLocalization } from "@/hooks/locales/LanguageContext";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { Appbar, SegmentedButtons } from "react-native-paper";
-import { WebView } from "react-native-webview";
 
 export default function EquipmentCardDetail() {
   const { t } = useLocalization();
@@ -74,7 +74,7 @@ export default function EquipmentCardDetail() {
           </>
         ) }
         {selectedTab === 'useAnalysis' && (
-            <WebView source={{ uri: 'https://www.bilibili.com/' }} />
+            <UseAnalysis />
         ) }
         {selectedTab === 'basicData' && (
           <BasicData />

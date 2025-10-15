@@ -335,6 +335,7 @@ export default function FaultFilterDrawer({
               // 样式配置
               itemHeight={50}
               style={styles.wheelPicker}
+              itemTextStyle={{ color: theme.colors.onSurface }}
             />
           </Animated.View>
         </Modal>
@@ -391,6 +392,7 @@ export default function FaultFilterDrawer({
               // 样式配置
               itemHeight={50}
               style={styles.wheelPicker}
+              itemTextStyle={{ color: theme.colors.onSurface }}
             />
           </Animated.View>
         </Modal>

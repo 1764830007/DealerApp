@@ -111,8 +111,7 @@ class AuthService {
         { key: 'userLoginName', value: callBackInfo.UserLoginName },
         { key: 'tokenExpiration', value: callBackInfo.TokenExpiration.toString() },
         { key: 'refreshTokenExpiration', value: callBackInfo.RefreshTokenExpiration.toString() },
-        { key: 'phoneNumber', value: callBackInfo.PhoneNumber || '' },
-        { key: 'email', value: callBackInfo.Email || '' },
+       
       ];
 
       for (const op of storageOperations) {
@@ -214,6 +213,9 @@ class AuthService {
           }
         }
 
+        // 存储工作订单权限信息
+        await this.storeWorkOrderPermissions(dealerInfo.permissions);
+
         // 存储完整的经销商信息（可选，用于调试或其他用途）
         await AsyncStorage.setItem('dealerInfo', JSON.stringify(dealerInfo));
         console.log('✅ Complete dealer info stored');
@@ -223,6 +225,80 @@ class AuthService {
     } catch (error) {
       console.error('❌ Error fetching dealer information:', error);
       // 不抛出错误，避免影响登录流程
+    }
+  }
+
+  // 存储权限信息
+  private async storeWorkOrderPermissions(permissions: string[]): Promise<void> {
+    try {
+      console.log('🔄 Processing work order permissions...');
+      
+      // 检查工作订单相关权限
+      const hasWorkOrderCreate = permissions.includes('WorkOrderCreate');
+      const hasWorkOrderAssign = permissions.includes('WorkOrderAssign');
+      const hasWorkOrderExecute = permissions.includes('WorkOrderExecute');
+
+      console.log('📋 Work order permissions:', {
+        hasWorkOrderCreate,
+        hasWorkOrderAssign,
+        hasWorkOrderExecute
+      });
+
+      // 根据权限组合确定权限类型
+      let workOrderPermissionType = 'none';
+      
+      if (hasWorkOrderCreate && !hasWorkOrderAssign && !hasWorkOrderExecute) {
+        workOrderPermissionType = 'create_only'; // 申请权限
+      } else if (!hasWorkOrderCreate && hasWorkOrderAssign && !hasWorkOrderExecute) {
+        workOrderPermissionType = 'assign_only'; // 派工权限
+      } else if (!hasWorkOrderCreate && !hasWorkOrderAssign && hasWorkOrderExecute) {
+        workOrderPermissionType = 'execute_only'; // 执行权限
+      } else if (hasWorkOrderCreate && hasWorkOrderAssign && !hasWorkOrderExecute) {
+        workOrderPermissionType = 'create_assign'; // 申请+派工权限
+      } else if (hasWorkOrderCreate && !hasWorkOrderAssign && hasWorkOrderExecute) {
+        workOrderPermissionType = 'create_execute'; // 申请+执行权限
+      } else if (!hasWorkOrderCreate && hasWorkOrderAssign && hasWorkOrderExecute) {
+        workOrderPermissionType = 'assign_execute'; // 派工+执行权限
+      } else if (hasWorkOrderCreate && hasWorkOrderAssign && hasWorkOrderExecute) {
+        workOrderPermissionType = 'all'; // 申请+派工+执行权限
+      }
+
+      console.log('✅ Work order permission type:', workOrderPermissionType);
+
+      // 存储权限信息到缓存
+      const permissionStorageOperations = [
+        { key: 'hasWorkOrderCreate', value: hasWorkOrderCreate.toString() },
+        { key: 'hasWorkOrderAssign', value: hasWorkOrderAssign.toString() },
+        { key: 'hasWorkOrderExecute', value: hasWorkOrderExecute.toString() },
+        { key: 'workOrderPermissionType', value: workOrderPermissionType },
+      ];
+
+      console.log("AsyncStorage.getItem('hasWorkOrderCreate'):",AsyncStorage.getItem('hasWorkOrderCreate'))
+      console.log("AsyncStorage.getItem('hasWorkOrderAssign'):",AsyncStorage.getItem('hasWorkOrderAssign'))
+      console.log("AsyncStorage.getItem('hasWorkOrderExecute'):",AsyncStorage.getItem('hasWorkOrderExecute'))
+      console.log("AsyncStorage.getItem('workOrderPermissionType'):",AsyncStorage.getItem('workOrderPermissionType'))
+
+
+      for (const op of permissionStorageOperations) {
+        try {
+          await AsyncStorage.setItem(op.key, op.value);
+          const stored = await AsyncStorage.getItem(op.key);
+          if (stored === op.value) {
+            console.log(`✅ ${op.key} stored and verified: ${op.value}`);
+          } else {
+            console.error(`❌ ${op.key} verification failed`);
+          }
+        } catch (storageError) {
+          console.error(`❌ Failed to store ${op.key}:`, storageError);
+        }
+      }
+
+      // 存储完整的权限列表（可选，用于调试或其他用途）
+      await AsyncStorage.setItem('userPermissions', JSON.stringify(permissions));
+      console.log('✅ Complete permissions stored');
+
+    } catch (error) {
+      console.error('❌ Error storing work order permissions:', error);
     }
   }
 
@@ -250,14 +326,24 @@ class AuthService {
       const beforeLogout = await AsyncStorage.getAllKeys();
       console.log('📦 Storage before logout:', beforeLogout);
 
-      // Remove all auth-related items
+      // Remove all auth-related items and permissions
       const keysToRemove = [
         'authToken',
         'refreshToken',
         'tokenExpiration',
         'refreshTokenExpiration',
         'userLoginName',
-        'isLoggedIn'
+        'isLoggedIn',
+        'dealerName_CN',
+        'dealerName_EN',
+        'userMobile',
+        'userEmail',
+        'dealerInfo',
+        'hasWorkOrderCreate',
+        'hasWorkOrderAssign',
+        'hasWorkOrderExecute',
+        'workOrderPermissionType',
+        'userPermissions'
       ];
 
       await AsyncStorage.multiRemove(keysToRemove);

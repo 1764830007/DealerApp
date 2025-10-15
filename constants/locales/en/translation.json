@@ -15,6 +15,8 @@
     "deviceManagement": "Device Management",
     "serviceNotice": "Service Notice",
     "allOrder": "All Orders",
+    "myOrder": "My Orders",
+    "myRepair": "My Repairs",
     "seeAll": "See All",
     "productModel": "Product Model",
     "productSerialNumber": "Product Serial Number",

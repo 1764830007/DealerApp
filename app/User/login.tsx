@@ -26,7 +26,7 @@ export default function Login() {
     <View style={styles.container}>
       <WebViewLogin
         visible={true}
-        onClose={() => router.back()}
+        onClose={() => router.replace('/User/login')}
         onLoginSuccess={handleLoginSuccess}
         onLoginError={handleLoginError}
       />

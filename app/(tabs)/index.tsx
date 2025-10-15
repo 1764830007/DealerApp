@@ -81,16 +81,7 @@ const Index = () => {
       setHasWorkOrderExecute(hasExecute === 'true');
       setWorkOrderPermissionType(permissionType || 'none');
 
-      console.log('✅ Loaded permissions from cache:', {
-        hasWorkOrderCreate: hasCreate === 'true',
-        hasWorkOrderAssign: hasAssign === 'true',
-        hasWorkOrderExecute: hasExecute === 'true',
-        workOrderPermissionType: permissionType
-      });
-      console.log("AsyncStorage.getItem('hasWorkOrderCreate'):",AsyncStorage.getItem('hasWorkOrderAssign'))
-      console.log("AsyncStorage.getItem('hasWorkOrderAssign'):",AsyncStorage.getItem('hasWorkOrderCreate'))
-      console.log("AsyncStorage.getItem('hasWorkOrderExecute'):",AsyncStorage.getItem('hasWorkOrderExecute'))
-      console.log("AsyncStorage.getItem('workOrderPermissionType'):",AsyncStorage.getItem('workOrderPermissionType'))
+      
     } catch (error) {
       console.error('❌ Error loading permissions:', error);
     }
@@ -361,7 +352,7 @@ const Index = () => {
       
       const response = await api.post<any>('/services/app/WorkOrderService/GetWorkOrdersByParameters', requestParams);
       const data = response.data;
-      console.log(`获取segStatusId=${segStatusId}的API响应数据:`, data);
+      //console.log(`获取segStatusId=${segStatusId}的API响应数据:`, data);
 
       // 验证响应有效性：成功且有result.data，则orderSegNo数量 = data数组长度
       if (data.success && data.result?.data) {
@@ -502,7 +493,7 @@ const Index = () => {
       }
       
       const data = response.data;
-      console.log('获取待出发数量的API响应数据:', data);
+      //console.log('获取待出发数量的API响应数据:', data);
 
       // 验证响应有效性：成功且有result.data，则数量 = data数组长度
       if (data.success && data.result?.data) {
@@ -533,7 +524,7 @@ const Index = () => {
       }
       
       const data = response.data;
-      console.log('获取进行中数量的API响应数据:', data);
+      //console.log('获取进行中数量的API响应数据:', data);
 
       // 验证响应有效性：成功且有result.data，则数量 = data数组长度
       if (data.success && data.result?.data) {
@@ -569,7 +560,7 @@ const Index = () => {
       
       const response = await api.post<any>('/services/app/WorkOrderService/GetWorkOrdersBySegStatus', requestParams);
       const data = response.data;
-      console.log('获取最新工单的API响应数据:', data);
+      //console.log('获取最新工单的API响应数据:', data);
 
       // 验证响应有效性：成功且有result.data，则取第一条作为最新工单
       if (data.success && data.result?.data && data.result.data.length > 0) {
@@ -649,32 +640,237 @@ const Index = () => {
     await fetchLatestWorkOrder();
   };
 
-  // 4. 原有fetchWorkOrders函数使用封装API
-  const fetchWorkOrders = async () => {
+  // 根据权限获取工单数据的函数
+  const fetchWorkOrdersByPermission = async () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await api.post<any>('/services/app/WorkOrderService/GetWorkOrdersByParameters', {
-        limit: 2,
-        orderByLastUpdatedTime: true,
-        offset: 0
-      });
-      console.log('API响应数据:', response.data);
+      
+      let workOrdersData: WorkOrder[] = [];
+      let displayMessage = '';
 
-      if (response.data.success && response.data.result) {
-        const transformedOrders: WorkOrder[] = response.data.result.data.map((order: any) => ({
-          code: order.workOrderNo,
-          status: order.workOrderStatus,
-          productModel: order.machineModel,
-          serialNumber: order.machineNo,
-          reportTime: formatDate(order.reportTime),
-          constructionSite: order.constructionLocation || '',
-          maintenanceDept: order.maintenanceDeptName || ''
-        }));
-        setWorkOrders(transformedOrders);
-      } else {
-        throw new Error(response.data.error?.message || '获取工单列表失败');
+      // 1. 仅申请权限
+      if (hasWorkOrderCreate && !hasWorkOrderAssign && !hasWorkOrderExecute) {
+        //console.log('获取工单数据 - 仅申请权限');
+        const requestParams = {
+          limit: 2,
+          offset: 0,
+          createByUser: 'philistest', // 当前用户名
+          workOrderSource: "DelegateSubmitted", // 代理提报
+          status: [1], // 待派工状态ID
+          orderByLastUpdatedTime: true
+        };
+        
+        const response = await api.post<any>('/services/app/WorkOrderService/GetWorkOrdersByParameters', requestParams);
+        console.log('仅申请权限API响应数据:', response.data);
+
+        if (response.data.success && response.data.result?.data) {
+          workOrdersData = response.data.result.data.slice(0, 2).map((order: any) => ({
+            code: order.workOrderNo,
+            status: order.workOrderStatus,
+            productModel: order.machineModel,
+            serialNumber: order.machineNo,
+            reportTime: formatDate(order.reportTime),
+            constructionSite: order.constructionLocation || '',
+            maintenanceDept: order.maintenanceDeptName || ''
+          }));
+          
+          if (workOrdersData.length === 0) {
+            displayMessage = locale === 'zh' ? '您目前没有在申请中的工单' : 'You do not have any work order applications';
+          }
+        }
       }
+      
+      // 2. 仅派工权限
+      else if (!hasWorkOrderCreate && hasWorkOrderAssign && !hasWorkOrderExecute) {
+        console.log('获取工单数据 - 仅派工权限');
+        const requestParams = {
+          limit: 2,
+          offset: 0,
+          orderByLastUpdatedTime: true,
+          status: [1, 3, 4, 5, 6, 8] // 所有工单状态
+        };
+        
+        const response = await api.post<any>('/services/app/WorkOrderService/GetWorkOrdersByParameters', requestParams);
+        console.log('仅派工权限API响应数据:', response.data);
+
+        if (response.data.success && response.data.result?.data) {
+          workOrdersData = response.data.result.data.slice(0, 2).map((order: any) => ({
+            code: order.workOrderNo,
+            status: order.workOrderStatus,
+            productModel: order.machineModel,
+            serialNumber: order.machineNo,
+            reportTime: formatDate(order.reportTime),
+            constructionSite: order.constructionLocation || '',
+            maintenanceDept: order.maintenanceDeptName || ''
+          }));
+          
+          if (workOrdersData.length === 0) {
+            displayMessage = locale === 'zh' ? '暂无工单' : 'No work order to operate';
+          }
+        }
+      }
+      
+      // 3. 仅执行权限
+      else if (!hasWorkOrderCreate && !hasWorkOrderAssign && hasWorkOrderExecute) {
+        console.log('获取工单数据 - 仅执行权限');
+        const requestParams = {
+          limit: 2,
+          offset: 0,
+          segStatusIds: [1, 3, 4, 5, 6, 8], // 全部状态
+          onsiteOrNot: 'Y',
+          orderByLastUpdatedTime: true
+        };
+        
+        const response = await api.post<any>('/services/app/WorkOrderService/GetWorkOrdersBySegStatus', requestParams);
+        console.log('仅执行权限API响应数据:', response.data);
+
+        if (response.data.success && response.data.result?.data) {
+          workOrdersData = response.data.result.data.slice(0, 2).map((order: any) => ({
+            code: order.workOrderNo || order.myWorkOrderSegNo || '',
+            status: order.workOrderStatusName || '',
+            productModel: order.machineModel || '',
+            serialNumber: order.machineNo || '',
+            reportTime: formatDate(order.reportTime),
+            constructionSite: order.constructionLocation || '',
+            maintenanceDept: order.maintenanceDeptName || ''
+          }));
+          
+          if (workOrdersData.length === 0) {
+            displayMessage = locale === 'zh' ? '您目前没有待出发工单' : 'you do not have work orders for departure';
+          }
+        }
+      }
+      
+      // 4. 申请+派工权限
+      else if (hasWorkOrderCreate && hasWorkOrderAssign && !hasWorkOrderExecute) {
+        console.log('获取工单数据 - 申请+派工权限');
+        const requestParams = {
+          limit: 2,
+          offset: 0,
+          orderByLastUpdatedTime: true,
+          status: [1, 3, 4, 5, 6, 8] // 所有工单状态
+        };
+        
+        const response = await api.post<any>('/services/app/WorkOrderService/GetWorkOrdersByParameters', requestParams);
+        console.log('申请+派工权限API响应数据:', response.data);
+
+        if (response.data.success && response.data.result?.data) {
+          workOrdersData = response.data.result.data.slice(0, 2).map((order: any) => ({
+            code: order.workOrderNo,
+            status: order.workOrderStatus,
+            productModel: order.machineModel,
+            serialNumber: order.machineNo,
+            reportTime: formatDate(order.reportTime),
+            constructionSite: order.constructionLocation || '',
+            maintenanceDept: order.maintenanceDeptName || ''
+          }));
+          
+          if (workOrdersData.length === 0) {
+            displayMessage = locale === 'zh' ? '暂无工单' : 'No work order to operate';
+          }
+        }
+      }
+      
+      // 5. 申请+执行权限
+      else if (hasWorkOrderCreate && !hasWorkOrderAssign && hasWorkOrderExecute) {
+        console.log('获取工单数据 - 申请+执行权限');
+        const requestParams = {
+          limit: 2,
+          offset: 0,
+          segStatusIds: [1, 3, 4, 5, 6, 8], // 全部状态
+          onsiteOrNot: 'Y',
+          orderByLastUpdatedTime: true
+        };
+        
+        const response = await api.post<any>('/services/app/WorkOrderService/GetWorkOrdersBySegStatus', requestParams);
+        console.log('申请+执行权限API响应数据:', response.data);
+
+        if (response.data.success && response.data.result?.data) {
+          workOrdersData = response.data.result.data.slice(0, 2).map((order: any) => ({
+            code: order.workOrderNo || order.myWorkOrderSegNo || '',
+            status: order.workOrderStatusName || '',
+            productModel: order.machineModel || '',
+            serialNumber: order.machineNo || '',
+            reportTime: formatDate(order.reportTime),
+            constructionSite: order.constructionLocation || '',
+            maintenanceDept: order.maintenanceDeptName || ''
+          }));
+          
+          if (workOrdersData.length === 0) {
+            displayMessage = locale === 'zh' ? '您目前没有待出发工单' : 'you do not have work orders for departure';
+          }
+        }
+      }
+      
+      // 6. 派工+执行权限
+      else if (!hasWorkOrderCreate && hasWorkOrderAssign && hasWorkOrderExecute) {
+        console.log('获取工单数据 - 派工+执行权限');
+        const requestParams = {
+          limit: 2,
+          offset: 0,
+          orderByLastUpdatedTime: true,
+          status: [1, 3, 4, 5, 6, 8] // 所有工单状态
+        };
+        
+        const response = await api.post<any>('/services/app/WorkOrderService/GetWorkOrdersByParameters', requestParams);
+        console.log('派工+执行权限API响应数据:', response.data);
+
+        if (response.data.success && response.data.result?.data) {
+          workOrdersData = response.data.result.data.slice(0, 2).map((order: any) => ({
+            code: order.workOrderNo,
+            status: order.workOrderStatus,
+            productModel: order.machineModel,
+            serialNumber: order.machineNo,
+            reportTime: formatDate(order.reportTime),
+            constructionSite: order.constructionLocation || '',
+            maintenanceDept: order.maintenanceDeptName || ''
+          }));
+          
+          if (workOrdersData.length === 0) {
+            displayMessage = locale === 'zh' ? '暂无工单' : 'No work order to operate';
+          }
+        }
+      }
+      
+      // 7. 申请+派工+执行权限
+      else if (hasWorkOrderCreate && hasWorkOrderAssign && hasWorkOrderExecute) {
+        console.log('获取工单数据 - 申请+派工+执行权限');
+        const requestParams = {
+          limit: 2,
+          offset: 0,
+          orderByLastUpdatedTime: true,
+          status: [1, 3, 4, 5, 6, 8] // 所有工单状态
+        };
+        
+        const response = await api.post<any>('/services/app/WorkOrderService/GetWorkOrdersByParameters', requestParams);
+        console.log('申请+派工+执行权限API响应数据:', response.data);
+
+        if (response.data.success && response.data.result?.data) {
+          workOrdersData = response.data.result.data.slice(0, 2).map((order: any) => ({
+            code: order.workOrderNo,
+            status: order.workOrderStatus,
+            productModel: order.machineModel,
+            serialNumber: order.machineNo,
+            reportTime: formatDate(order.reportTime),
+            constructionSite: order.constructionLocation || '',
+            maintenanceDept: order.maintenanceDeptName || ''
+          }));
+          
+          if (workOrdersData.length === 0) {
+            displayMessage = locale === 'zh' ? '暂无工单' : 'No work order to operate';
+          }
+        }
+      }
+
+      // 设置工单数据和显示消息
+      setWorkOrders(workOrdersData);
+      if (displayMessage) {
+        setError(displayMessage);
+      } else {
+        setError(null);
+      }
+
     } catch (err: any) {
       console.error('获取工单列表错误:', err);
       const errorMessage = err.response?.data?.error?.message || err.message || '网络请求失败';
@@ -689,7 +885,7 @@ const Index = () => {
   useEffect(() => {
     const initData = async () => {
       await loadPermissions();
-      await Promise.all([fetchWorkOrders(), fetchAllPendingCounts()]);
+      await Promise.all([fetchWorkOrdersByPermission(), fetchAllPendingCounts()]);
     };
     initData();
   }, []);
@@ -711,7 +907,7 @@ const Index = () => {
   // 刷新处理函数
   const handleRefresh = () => {
     setRefreshing(true);
-    Promise.all([fetchWorkOrders(), fetchAllPendingCounts()])
+    Promise.all([fetchWorkOrdersByPermission(), fetchAllPendingCounts()])
       .finally(() => setRefreshing(false));
   };
 

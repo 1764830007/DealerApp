@@ -8,13 +8,16 @@ import { useTheme as useCustomTheme } from '../contexts/ThemeContext';
 export default function SettingScreen() {
   const router = useRouter();
   const { logout } = useAuth();
-  const userName = AsyncStorage.getItem('userLoginName');
-  const phoneNumber = AsyncStorage.getItem('phoneNumber');
-  const email = AsyncStorage.getItem('email');
+
   const { themeMode, currentTheme } = useCustomTheme();
   const theme = useTheme();
   const { locale, setLanguage, t } = useLocalization();
-
+  const userName = AsyncStorage.getItem('userLoginName');
+  const dealerName_CN = AsyncStorage.getItem('dealerName_CN');
+  const dealerName_EN = AsyncStorage.getItem('dealerName_EN');
+  const dealerName = locale === 'zh' ? dealerName_CN : dealerName_EN;
+  const userPhoneNumber = AsyncStorage.getItem('userMobile');
+  const userEmail = AsyncStorage.getItem('userEmail');
   const handleLogout = async () => {
     try {
       console.log('🟢 Settings: Logout button pressed');
@@ -52,7 +55,7 @@ export default function SettingScreen() {
           <Text style={[styles.subtitleText, { color: theme.colors.onSurface, fontSize: 20 }]}>{userName}</Text>
           <View style={[styles.name, { marginTop: 20 }]}>
             <Icon source="account" size={15} color={theme.colors.onSurface} />
-            <Text style={[styles.subtitleText, { marginLeft: 10, color: theme.colors.onSurface }]}>涉县威远机械设备有限公司</Text>
+            <Text style={[styles.subtitleText, { marginLeft: 10, color: theme.colors.onSurface }]}>{dealerName}</Text>
           </View>
         </View>
         <TouchableOpacity onPress={() => router.push('/changePhoneNumber')}>
@@ -63,7 +66,7 @@ export default function SettingScreen() {
               <Text style={[styles.profileListContent, { color: theme.colors.onSurface }]}>{t('setting.phone')}</Text>
             </View>
             <View style={styles.rightContent}>
-              <Text style={[styles.textRight, { color: theme.colors.outline }]}>{phoneNumber}</Text>
+              <Text style={[styles.textRight, { color: theme.colors.outline }]}>{userPhoneNumber}</Text>
               <Icon
                 source="chevron-right"
                 size={20}
@@ -80,7 +83,7 @@ export default function SettingScreen() {
               <Text style={[styles.profileListContent, { color: theme.colors.onSurface }]}>{t('setting.email')}</Text>
             </View>
             <View style={styles.rightContent}>
-              <Text style={[styles.textRight, { color: theme.colors.outline }]}>{email}</Text>
+              <Text style={[styles.textRight, { color: theme.colors.outline }]}>{userEmail}</Text>
               <Icon
                 source="chevron-right"
                 size={20}

@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
@@ -20,7 +21,6 @@ import {
 } from 'react-native-paper';
 import { useLocalization } from '../../hooks/locales/LanguageContext';
 import api from '../services/api';
-
 // 前端工单接口定义
 interface WorkOrder {
   code: string;
@@ -33,10 +33,12 @@ interface WorkOrder {
 }
 
 const Index = () => {
-  const { t } = useLocalization();
+  const { locale, setLanguage, t } = useLocalization();
   const theme = useTheme();
   const router = useRouter();
-  
+  const dealerName_CN = AsyncStorage.getItem('dealerName_CN');
+  const dealerName_EN = AsyncStorage.getItem('dealerName_EN');
+  const dealerName = locale === 'zh' ? dealerName_CN : dealerName_EN;
   // 固定权限变量：1=申请权限，2=派工权限，3=执行权限，4=申请+派工权限，5=申请+执行权限，6=派工+执行权限，7=申请+派工+执行权限
   const [PERMISSION_LEVEL, setPermissionLevel] = useState<number>(6); // 这里可以修改为需要的权限值
   
@@ -644,7 +646,7 @@ const Index = () => {
       >
         {/* 顶部公司名称与图标 */}
         <View style={styles.topBar}>
-          <Text style={[styles.companyName, { color: theme.colors.onSurface }]}>涉县威远机械设备有限公司</Text>
+          <Text style={[styles.companyName, { color: theme.colors.onSurface }]}>{dealerName}</Text>
           <View style={styles.topIcons}>
             <TouchableOpacity 
               style={styles.permissionBtn}

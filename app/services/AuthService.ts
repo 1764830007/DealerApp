@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
+import api from './api';
 
 interface CallBackInfo {
   UserLoginName: string;
@@ -38,6 +39,47 @@ interface UserProfile {
   // add fields from your UserProfile model
 }
 
+// 经销商信息接口
+interface DealerInfo {
+  dealerCode: string;
+  accountGroup: string;
+  dealerName: string | null;
+  dealerName_CN: string;
+  dealerName_EN: string;
+  salesOrganization: string;
+  priceDistrict: string;
+  districtionChannel: string;
+  division: string;
+  machine: string;
+  parts: string;
+  service: string;
+  provinceManager: string;
+  regionManager: string;
+  dealerType: string;
+}
+
+// 用户经销商信息响应接口
+interface UserDealerInfoResponse {
+  result: {
+    userLoginName: string;
+    userName_EN: string;
+    userName_CN: string;
+    cwsid: string;
+    mainDealer: DealerInfo;
+    dealers: DealerInfo[];
+    mobile: string;
+    email: string | null;
+    permissions: string[];
+    haveLoggedApp: boolean;
+    status: string;
+  };
+  targetUrl: string | null;
+  success: boolean;
+  error: string | null;
+  unAuthorizedRequest: boolean;
+  __abp: boolean;
+}
+
 class AuthService {
   private static instance: AuthService;
   private userProfile: UserProfile | null = null;
@@ -69,8 +111,8 @@ class AuthService {
         { key: 'userLoginName', value: callBackInfo.UserLoginName },
         { key: 'tokenExpiration', value: callBackInfo.TokenExpiration.toString() },
         { key: 'refreshTokenExpiration', value: callBackInfo.RefreshTokenExpiration.toString() },
-        { key: 'phoneNumber', value: callBackInfo.PhoneNumber },
-        { key: 'email', value: callBackInfo.Email },
+        { key: 'phoneNumber', value: callBackInfo.PhoneNumber || '' },
+        { key: 'email', value: callBackInfo.Email || '' },
       ];
 
       for (const op of storageOperations) {
@@ -111,6 +153,9 @@ class AuthService {
 
   private async initializeAfterLogin(): Promise<void> {
     try {
+      // 获取经销商信息
+      await this.fetchAndStoreDealerInfo();
+
       // Update user permissions
       await this.updatePermissions();
 
@@ -127,6 +172,57 @@ class AuthService {
       await this.logOutPushNotification();
     } catch (error) {
       console.error('Init after login error:', error);
+    }
+  }
+
+  // 获取并存储经销商信息
+  private async fetchAndStoreDealerInfo(): Promise<void> {
+    try {
+      console.log('🔄 Fetching dealer information...');
+      
+      const response = await api.get<UserDealerInfoResponse>('/services/app/UserService/GetUserDealerInfo');
+      
+      if (response.data.success && response.data.result) {
+        const dealerInfo = response.data.result;
+        console.log('✅ Dealer information fetched successfully:', {
+          userLoginName: dealerInfo.userLoginName,
+          mainDealerCN: dealerInfo.mainDealer?.dealerName_CN,
+          mainDealerEN: dealerInfo.mainDealer?.dealerName_EN,
+          mobile: dealerInfo.mobile,
+          email: dealerInfo.email
+        });
+
+        // 存储经销商信息到缓存
+        const dealerStorageOperations = [
+          { key: 'dealerName_CN', value: dealerInfo.mainDealer?.dealerName_CN || '' },
+          { key: 'dealerName_EN', value: dealerInfo.mainDealer?.dealerName_EN || '' },
+          { key: 'userMobile', value: dealerInfo.mobile || '' },
+          { key: 'userEmail', value: dealerInfo.email || '' },
+        ];
+
+        for (const op of dealerStorageOperations) {
+          try {
+            await AsyncStorage.setItem(op.key, op.value);
+            const stored = await AsyncStorage.getItem(op.key);
+            if (stored === op.value) {
+              console.log(`✅ ${op.key} stored and verified: ${op.value}`);
+            } else {
+              console.error(`❌ ${op.key} verification failed`);
+            }
+          } catch (storageError) {
+            console.error(`❌ Failed to store ${op.key}:`, storageError);
+          }
+        }
+
+        // 存储完整的经销商信息（可选，用于调试或其他用途）
+        await AsyncStorage.setItem('dealerInfo', JSON.stringify(dealerInfo));
+        console.log('✅ Complete dealer info stored');
+      } else {
+        console.error('❌ Failed to fetch dealer information:', response.data.error);
+      }
+    } catch (error) {
+      console.error('❌ Error fetching dealer information:', error);
+      // 不抛出错误，避免影响登录流程
     }
   }
 

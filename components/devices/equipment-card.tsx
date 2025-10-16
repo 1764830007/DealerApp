@@ -9,7 +9,7 @@ export default function EquipmentCard() {
   const goToFaultAlarm = () => {
     // 传递serialNumber参数，先写死为S6203227
     router.push({
-      pathname: '/devices/equipment-fault-alert',
+      pathname: '/devices/equipment-fault-list',
       params: { serialNumber: 'SL702740' }
     });
   };

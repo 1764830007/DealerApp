@@ -17,7 +17,7 @@ import { Appbar, useTheme } from "react-native-paper";
 export interface DrawerProps {
   title: string;
   children: React.ReactNode;
-  drawerContent?: () => React.JSX.Element;
+  drawerContent?: (closeDrawer: () => void) => React.JSX.Element;
 }
 
 export default function CustomDrawer({ title, children, drawerContent }: DrawerProps) {
@@ -27,6 +27,10 @@ export default function CustomDrawer({ title, children, drawerContent }: DrawerP
   const openDrawer = Gesture.Tap()
     .runOnJS(true)
     .onStart(() => drawerRef.current?.openDrawer());
+
+  const closeDrawer = () => {
+    drawerRef.current?.closeDrawer();
+  };
 
   // 动态样式
   const dynamicStyles = {
@@ -46,7 +50,7 @@ export default function CustomDrawer({ title, children, drawerContent }: DrawerP
     <GestureHandlerRootView>
       <ReanimatedDrawerLayout
         ref={drawerRef}
-        renderNavigationView={ () => drawerContent?.() }
+        renderNavigationView={ () => drawerContent?.(closeDrawer) }
         drawerPosition={DrawerPosition.RIGHT}
         drawerType={DrawerType.SLIDE}
         drawerWidth={300} // 设置抽屉宽度为屏幕宽度的三分之二

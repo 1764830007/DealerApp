@@ -1,68 +1,104 @@
+import CustomDrawer from "@/components/devices/CustomDrawer";
+import FaultFilterDrawer, { FilterState } from "@/components/devices/fault-filter-drawer";
 import FaultList from "@/components/devices/fault-list";
 import UseAnalysis from "@/components/devices/use-analysis";
 import { useLocalization } from "@/hooks/locales/LanguageContext";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import { StyleSheet, View } from "react-native";
-import { Appbar, SegmentedButtons } from "react-native-paper";
+import { SegmentedButtons } from "react-native-paper";
 
 export default function EquipmentFaultAlert() {
   const { t } = useLocalization();
   const router = useRouter();
   const { id } = useLocalSearchParams();
   const [selectedTab, setSelectedTab] = useState("faultList");
+  const [filterState, setFilterState] = useState<FilterState>({
+    startDate: null,
+    endDate: null,
+    sortBy: 'time',
+    severity: '',
+    faultCode: ''
+  });
+
+  const handleFilterChange = (newFilter: FilterState) => {
+    setFilterState(newFilter);
+  };
+
+  const handleApplyFilter = async (closeDrawer?: () => void) => {
+    // 筛选状态已经更新，FaultList 组件会自动重新加载数据
+    if (closeDrawer) {
+      closeDrawer();
+    }
+  };
+
+  const handleResetFilter = async () => {
+    const resetFilter: FilterState = {
+      startDate: null,
+      endDate: null,
+      sortBy: 'time',
+      severity: '',
+      faultCode: ''
+    };
+    setFilterState(resetFilter);
+  };
+
+  const FilterContent = (closeDrawer: () => void) => (
+    <FaultFilterDrawer
+      filterState={filterState}
+      onFilterChange={handleFilterChange}
+      onApplyFilter={() => handleApplyFilter(closeDrawer)}
+      onResetFilter={handleResetFilter}
+    />
+  );
 
   return (
-    <View style={styles.container}>
-      {/* header bar of the equipment detal  */}
-      <Appbar.Header style={styles.bar} elevated>
-        <Appbar.BackAction onPress={() => router.back()} />
-        <Appbar.Content
-          title={t("equipment.detail")}
-          titleStyle={{ fontSize: 16, fontWeight: 600 }}
-        />
-      </Appbar.Header>
-
-      <View style={styles.content}>
-        {/* 实时数据，使用分析，基本信息，维保记录 */}
-        <SegmentedButtons
-          theme={{
-            colors: {
-              secondaryContainer: "#013b84",
-              onSecondaryContainer: "white",
-            },
-          }}
-          style={styles.segmentedButtons}
-          value={selectedTab}
-          onValueChange={setSelectedTab}
-          buttons={[
-            {
-              value: "faultList",
-              label: "故障列表",
-              uncheckedColor: "grey",
-              labelStyle: styles.labelTab,
-              style: styles.Tab,
-            },
-            {
-              value: "faultStatistics",
-              label: "故障统计",
-              uncheckedColor: "grey",
-              labelStyle: styles.labelTab,
-              style: styles.Tab,
-            }
-          ]}
-        />
-        {selectedTab === 'faultList' && (
-          <>
-            <FaultList />
-          </>
-        ) }
-        {selectedTab === 'faultStatistics' && (
-            <UseAnalysis />
-        ) }
+    <CustomDrawer
+      title={t("equipment.detail")}
+      drawerContent={FilterContent}
+    >
+      <View style={styles.container}>
+        {/* header bar of the equipment detal  */}
         
+
+        <View style={styles.content}>
+          {/* 实时数据，使用分析，基本信息，维保记录 */}
+          <SegmentedButtons
+            theme={{
+              colors: {
+                secondaryContainer: "#013b84",
+                onSecondaryContainer: "white",
+              },
+            }}
+            style={styles.segmentedButtons}
+            value={selectedTab}
+            onValueChange={setSelectedTab}
+            buttons={[
+              {
+                value: "faultList",
+                label: "故障列表",
+                uncheckedColor: "grey",
+                labelStyle: styles.labelTab,
+                style: styles.Tab,
+              },
+              {
+                value: "faultStatistics",
+                label: "故障统计",
+                uncheckedColor: "grey",
+                labelStyle: styles.labelTab,
+                style: styles.Tab,
+              }
+            ]}
+          />
+          {selectedTab === 'faultList' && (
+            <FaultList filterState={filterState} />
+          ) }
+          {selectedTab === 'faultStatistics' && (
+            <UseAnalysis />
+          ) }
+        </View>
       </View>
-    </View>
+    </CustomDrawer>
   );
 }
 

@@ -6,19 +6,16 @@ import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from "react-nat
 import { useTheme } from 'react-native-paper';
 import FaultService, { FaultItem } from '../../app/services/FaultService';
 
+interface FaultListProps {
+  filterState?: FilterState;
+}
+
 // 设备故障报警
-export default function FaultList() {
+export default function FaultList({ filterState }: FaultListProps) {
     const { serialNumber } = useLocalSearchParams<{ serialNumber: string }>();
     const [expandedCards, setExpandedCards] = useState<number[]>([]);
     const [faultData, setFaultData] = useState<FaultItem[]>([]);
     const [filteredData, setFilteredData] = useState<FaultItem[]>([]);
-    const [filterState, setFilterState] = useState<FilterState>({
-        startDate: null,
-        endDate: null,
-        sortBy: 'time',
-        severity: '',
-        faultCode: ''
-    });
     const [loading, setLoading] = useState(false);
     const [loadingMore, setLoadingMore] = useState(false);
     const [hasMore, setHasMore] = useState(true);
@@ -27,7 +24,7 @@ export default function FaultList() {
     const theme = useTheme();
 
     // 获取故障数据
-    const fetchFaultData = useCallback(async (page: number = 0, isLoadMore: boolean = false) => {
+    const fetchFaultData = useCallback(async (page: number = 0, isLoadMore: boolean = false, customFilter?: FilterState) => {
         if (!serialNumber) return;
 
         try {
@@ -37,23 +34,66 @@ export default function FaultList() {
                 setLoading(true);
             }
 
-            // 获取当前日期的开始和结束时间
-            const today = new Date();
-            const startTime = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')} 00:00:00`;
-            const endTime = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')} 23:59:59`;
+            // 使用传入的筛选状态或默认值
+            const currentFilter = customFilter || filterState || {
+                startDate: null,
+                endDate: null,
+                sortBy: 'time',
+                severity: '',
+                faultCode: ''
+            };
 
-            // 打印时间范围信息
-            console.log('首次进入故障列表页面，时间范围设置:');
-            console.log('startTime:', startTime);
-            console.log('endTime:', endTime);
-
-            const response = await FaultService.getFaultListBySn({
+            // 构建API参数
+            const params: any = {
                 serialNumbers: [serialNumber],
                 limit: 10,
-                offset: page * 10,
-                startTime,
-                endTime
-            });
+                offset: page * 10
+            };
+
+            // 设置时间范围
+            if (currentFilter.startDate) {
+                const startDate = currentFilter.startDate;
+                params.startTime = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}-${String(startDate.getDate()).padStart(2, '0')} 00:00:00`;
+            } else {
+                // 如果没有设置开始日期，使用当天零点
+                const today = new Date();
+                params.startTime = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')} 00:00:00`;
+            }
+
+            if (currentFilter.endDate) {
+                const endDate = currentFilter.endDate;
+                params.endTime = `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, '0')}-${String(endDate.getDate()).padStart(2, '0')} 23:59:59`;
+            } else {
+                // 如果没有设置结束日期，使用当天23:59:59
+                const today = new Date();
+                params.endTime = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')} 23:59:59`;
+            }
+
+            // 设置故障等级
+            if (currentFilter.severity) {
+                const severityMap: Record<string, string> = {
+                    'high': '高',
+                    'medium': '中',
+                    'low': '低'
+                };
+                params.faultGrade = severityMap[currentFilter.severity];
+            }
+
+            // 设置故障代码
+            if (currentFilter.faultCode) {
+                params.faultCode = currentFilter.faultCode;
+            }
+
+            // 设置排序方式
+            if (currentFilter.sortBy === 'severity') {
+                params.sortBy = 'faultGradeSort';
+            } else {
+                params.sortBy = 'reportTime';
+            }
+
+            console.log('调用API参数:', params);
+
+            const response = await FaultService.getFaultListBySn(params);
 
             if (response.success && response.result.rows) {
                 const newData = response.result.rows;
@@ -67,7 +107,6 @@ export default function FaultList() {
                 }
 
                 // 检查是否还有更多数据
-                // 如果第一页数据不够10条，说明没有更多数据了
                 if (page === 0 && newData.length < 10) {
                     setHasMore(false);
                 } else {
@@ -86,12 +125,19 @@ export default function FaultList() {
             setLoading(false);
             setLoadingMore(false);
         }
-    }, [serialNumber]);
+    }, [serialNumber, filterState]);
 
     // 初始加载数据
     useEffect(() => {
         fetchFaultData(0);
     }, [fetchFaultData]);
+
+    // 当筛选状态变化时重新加载数据
+    useEffect(() => {
+        if (filterState) {
+            fetchFaultData(0, false, filterState);
+        }
+    }, [filterState, fetchFaultData]);
 
     // 滑到底部加载更多
     const handleScroll = useCallback((event: any) => {
@@ -114,153 +160,6 @@ export default function FaultList() {
                 ? prev.filter(cardIndex => cardIndex !== index)
                 : [...prev, index]
         );
-    };
-
-    const handleFilterChange = (newFilter: FilterState) => {
-        setFilterState(newFilter);
-    };
-
-    const handleApplyFilter = async (closeDrawer?: () => void) => {
-        // 打印筛选信息
-        console.log('=== 筛选信息 ===');
-        console.log('开始日期:', filterState.startDate ? filterState.startDate.toLocaleDateString('zh-CN') : '未设置');
-        console.log('结束日期:', filterState.endDate ? filterState.endDate.toLocaleDateString('zh-CN') : '未设置');
-        console.log('排序方式:', filterState.sortBy === 'time' ? '时间排序' : '等级排序');
-        console.log('故障等级:', filterState.severity === '' ? '全部' :
-            filterState.severity === 'high' ? '高' :
-                filterState.severity === 'medium' ? '中' : '低');
-        console.log('故障代码:', filterState.faultCode || '未设置');
-        console.log('================');
-
-        try {
-            setLoading(true);
-
-            // 构建API参数
-            const params: any = {
-                serialNumbers: [serialNumber!],
-                limit: 10,
-                offset: 0
-            };
-
-            // 设置时间范围
-            if (filterState.startDate) {
-                const startDate = filterState.startDate;
-                params.startTime = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}-${String(startDate.getDate()).padStart(2, '0')} 00:00:00`;
-            } else {
-                // 如果没有设置开始日期，使用当天零点
-                const today = new Date();
-                params.startTime = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')} 00:00:00`;
-            }
-
-            if (filterState.endDate) {
-                const endDate = filterState.endDate;
-                params.endTime = `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, '0')}-${String(endDate.getDate()).padStart(2, '0')} 23:59:59`;
-            } else {
-                // 如果没有设置结束日期，使用当天23:59:59
-                const today = new Date();
-                params.endTime = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')} 23:59:59`;
-            }
-
-            // 设置故障等级
-            if (filterState.severity) {
-                const severityMap: Record<string, string> = {
-                    'high': '高',
-                    'medium': '中',
-                    'low': '低'
-                };
-                params.faultGrade = severityMap[filterState.severity];
-            }
-
-            // 设置故障代码
-            if (filterState.faultCode) {
-                params.faultCode = filterState.faultCode;
-            }
-
-            // 设置排序方式
-            if (filterState.sortBy === 'severity') {
-                params.sortBy = 'faultGradeSort';
-            } else {
-                params.sortBy = 'reportTime';
-            }
-
-            console.log('调用API参数:', params);
-
-            // 调用API获取筛选后的数据
-            const response = await FaultService.getFaultListBySn(params);
-
-            if (response.success && response.result.rows) {
-                const newData = response.result.rows;
-                setFaultData(newData);
-                setFilteredData(newData);
-
-                // 重置分页状态
-                setCurrentPage(0);
-                setHasMore(newData.length === 10);
-
-                // 默认展开第一个卡片
-                if (newData.length > 0) {
-                    setExpandedCards([0]);
-                }
-
-                // 筛选完成后自动关闭侧边栏
-                if (closeDrawer) {
-                    closeDrawer();
-                }
-            }
-        } catch (error) {
-            console.error('筛选数据失败:', error);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleResetFilter = async () => {
-        const resetFilter: FilterState = {
-            startDate: null,
-            endDate: null,
-            sortBy: 'time',
-            severity: '',
-            faultCode: ''
-        };
-        setFilterState(resetFilter);
-
-        // 重置筛选后重新调用API获取数据
-        try {
-            setLoading(true);
-
-            // 获取当前日期的开始和结束时间
-            const today = new Date();
-            const startTime = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')} 00:00:00`;
-            const endTime = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')} 23:59:59`;
-
-            const response = await FaultService.getFaultListBySn({
-                serialNumbers: [serialNumber!],
-                limit: 10,
-                offset: 0,
-                startTime,
-                endTime,
-                sortBy: 'reportTime'
-            });
-
-            if (response.success && response.result.rows) {
-                const newData = response.result.rows;
-                setFaultData(newData);
-                setFilteredData(newData);
-
-                // 重置分页状态
-                setCurrentPage(0);
-                setHasMore(newData.length === 10);
-
-                // 默认展开第一个卡片
-                if (newData.length > 0) {
-                    setExpandedCards([0]);
-                }
-            }
-        } catch (error) {
-            console.error('重置筛选数据失败:', error);
-        } finally {
-            setLoading(false);
-        }
     };
 
 

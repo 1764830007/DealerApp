@@ -24,6 +24,10 @@ export function DealerSelection({ dealerText, onDealerTextChange, onConfirm }: D
   const deviceTypes = ['装载机', '推土机', '平地机', '压路机'];
   // 设备型号数据
   const deviceModels = ['型号A', '型号B', '型号C', '型号D'];
+  // 客户数据
+  const customers = ['客户A', '客户B', '客户C', '客户D'];
+  // 选中的客户
+  const [selectedCustomers, setSelectedCustomers] = useState<string[]>([]);
 
   // 处理设备类型按钮点击
   const handleDeviceTypePress = (type: string) => {
@@ -45,12 +49,31 @@ export function DealerSelection({ dealerText, onDealerTextChange, onConfirm }: D
     }
   };
 
+  // 处理客户选择
+  const handleCustomerSelect = (customer: string) => {
+    if (selectedCustomers.includes(customer)) {
+      setSelectedCustomers(prev => prev.filter(item => item !== customer));
+    } else {
+      setSelectedCustomers(prev => [...prev, customer]);
+    }
+  };
+
+  // 全选客户
+  const selectAllCustomers = () => {
+    setSelectedCustomers([...customers]);
+  };
+
+  // 全不选客户
+  const deselectAllCustomers = () => {
+    setSelectedCustomers([]);
+  };
+
   return (
     <View style={{ flex: 1 }}>
       {/* 点击经销商，打开侧边栏，选择经销商，点击确认 */}
       <EmptyDrawer drawerContent={(helpers: Helpers) => (
         <>
-          <View style={[{ padding: 10 }]}>
+          <View style={[{ padding: 10, flex: 1 }]}>
             {currentDrawerType === 'customer' ? (
               // 客户选择UI
               <>
@@ -68,22 +91,52 @@ export function DealerSelection({ dealerText, onDealerTextChange, onConfirm }: D
                   }}>确认</Button>
                 </View>
                 {/* 客户列表 */}
-                <View style={{ padding: 16 }}>
-                  <Text style={[styles.label, { color: theme.colors.onSurface }]}>客户列表</Text>
+                <View style={{ flex: 1, padding: 5 }}>
+                 
                   <View style={styles.customerList}>
-                    <TouchableOpacity style={styles.customerItem}>
-                      <Text>客户A</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.customerItem}>
-                      <Text>客户B</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.customerItem}>
-                      <Text>客户C</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.customerItem}>
-                      <Text>客户D</Text>
-                    </TouchableOpacity>
+                    {customers.map(customer => (
+                      <TouchableOpacity 
+                        key={customer}
+                        style={[
+                          styles.customerItem, 
+                          selectedCustomers.includes(customer) && styles.selectedCustomerItem
+                        ]}
+                        onPress={() => handleCustomerSelect(customer)}
+                      >
+                        <View style={styles.customerItemContent}>
+                          <View style={[
+                            styles.checkbox,
+                            selectedCustomers.includes(customer) && styles.checkedCheckbox
+                          ]}>
+                            {selectedCustomers.includes(customer) && (
+                              <Text style={styles.checkmark}>✓</Text>
+                            )}
+                          </View>
+                          <Text style={[
+                            styles.customerText,
+                            selectedCustomers.includes(customer) && styles.selectedCustomerText
+                          ]}>
+                            {customer}
+                          </Text>
+                        </View>
+                      </TouchableOpacity>
+                    ))}
                   </View>
+                </View>
+                {/* 固定在底部的全选/全不选按钮 */}
+                <View style={styles.fixedSelectAllContainer}>
+                  <TouchableOpacity 
+                    style={styles.selectAllButton}
+                    onPress={deselectAllCustomers}
+                  >
+                    <Text style={styles.selectAllText}>全不选</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    style={styles.selectAllButton}
+                    onPress={selectAllCustomers}
+                  >
+                    <Text style={styles.selectAllText}>全选</Text>
+                  </TouchableOpacity>
                 </View>
               </>
             ) : (
@@ -331,5 +384,67 @@ const styles = StyleSheet.create({
     padding: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
+  },
+  // 客户选择相关样式
+  selectedCustomerItem: {
+    backgroundColor: '#f0f8ff',
+  },
+  customerItemContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 3,
+    marginRight: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  checkedCheckbox: {
+    backgroundColor: 'blue',
+    borderColor: 'blue',
+  },
+  checkmark: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  customerText: {
+    fontSize: 16,
+    color: 'black',
+  },
+  selectedCustomerText: {
+    color: 'blue',
+    fontWeight: '500',
+  },
+  selectAllContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#eee',
+  },
+  selectAllButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: '#cfcfcfff',
+    borderRadius: 4,
+  },
+  selectAllText: {
+    fontSize: 14,
+    color: '#333',
+  },
+  // 固定在底部的全选/全不选容器样式
+  fixedSelectAllContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    padding: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#eee',
+    
   },
 });

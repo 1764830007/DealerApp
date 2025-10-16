@@ -1,7 +1,7 @@
 import EmptyDrawer, { Helpers } from "@/components/devices/EmptyDrawer";
 import Ionicons from '@expo/vector-icons/Ionicons';
 import React, { useState } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Button, TextInput, useTheme } from 'react-native-paper';
 
 // 经销商选择组件
@@ -25,7 +25,7 @@ export function DealerSelection({ dealerText, onDealerTextChange, onConfirm }: D
   // 设备型号数据
   const deviceModels = ['型号A', '型号B', '型号C', '型号D'];
   // 客户数据
-  const customers = ['客户A', '客户B', '客户C', '客户D'];
+  const customers = ['客户A', '客户B', '客户C', '客户D','客户A1', '客户B1', '客户C1', '客户D1','客户A2', '客户B2', '客户C2', '客户D2','客户A3', '客户B3', '客户C3', '客户D3','客户A4', '客户B4', '客户C4', '客户D4','客户A5', '客户B5', '客户C5', '客户D5','客户A6', '客户B6', '客户C6', '客户D6'];
   // 选中的客户
   const [selectedCustomers, setSelectedCustomers] = useState<string[]>([]);
 
@@ -82,7 +82,7 @@ export function DealerSelection({ dealerText, onDealerTextChange, onConfirm }: D
                   <TextInput
                     value={dealerText}
                     onChangeText={onDealerTextChange}
-                    style={{ flex: 1, marginHorizontal: 8 }}
+                    style={{ flex: 1, marginHorizontal: 8, height:30, backgroundColor:'#e1e1e1ff',borderWidth:0.5, borderRadius:5, paddingHorizontal:10 }}
                     placeholder="搜索经销商"
                   />
                   <Button onPress={() => {
@@ -90,10 +90,9 @@ export function DealerSelection({ dealerText, onDealerTextChange, onConfirm }: D
                     helpers.closeDrawer();
                   }}>确认</Button>
                 </View>
-                {/* 客户列表 */}
+                {/* 可滚动的客户列表 */}
                 <View style={{ flex: 1, padding: 5 }}>
-                 
-                  <View style={styles.customerList}>
+                  <ScrollView style={styles.customerList}>
                     {customers.map(customer => (
                       <TouchableOpacity 
                         key={customer}
@@ -121,7 +120,7 @@ export function DealerSelection({ dealerText, onDealerTextChange, onConfirm }: D
                         </View>
                       </TouchableOpacity>
                     ))}
-                  </View>
+                  </ScrollView>
                 </View>
                 {/* 固定在底部的全选/全不选按钮 */}
                 <View style={styles.fixedSelectAllContainer}>
@@ -431,7 +430,7 @@ const styles = StyleSheet.create({
   selectAllButton: {
     paddingHorizontal: 16,
     paddingVertical: 8,
-    backgroundColor: '#cfcfcfff',
+    backgroundColor: '#d8d8d8ff',
     borderRadius: 4,
   },
   selectAllText: {
@@ -445,6 +444,6 @@ const styles = StyleSheet.create({
     padding: 16,
     borderTopWidth: 1,
     borderTopColor: '#eee',
-    
+
   },
 });

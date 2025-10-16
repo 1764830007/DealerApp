@@ -1,6 +1,6 @@
 import CustomDrawer from "@/components/devices/CustomDrawer";
-import FaultFilterDrawer, { FilterState } from "@/components/devices/fault-filter-drawer";
 import FaultList from "@/components/devices/fault-list";
+import { DealerSelection } from "@/components/devices/fault-list-filter-drawer";
 import UseAnalysis from "@/components/devices/use-analysis";
 import { useLocalization } from "@/hooks/locales/LanguageContext";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -8,54 +8,40 @@ import { useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { SegmentedButtons } from "react-native-paper";
 
+import { SafeAreaView } from "react-native-safe-area-context";
+
 export default function EquipmentFaultAlert() {
   const { t } = useLocalization();
   const router = useRouter();
   const { id } = useLocalSearchParams();
   const [selectedTab, setSelectedTab] = useState("faultList");
-  const [filterState, setFilterState] = useState<FilterState>({
-    startDate: null,
-    endDate: null,
-    sortBy: 'time',
-    severity: '',
-    faultCode: ''
-  });
+  const [dealerText, setDealerText] = useState('search');
 
-  const handleFilterChange = (newFilter: FilterState) => {
-    setFilterState(newFilter);
+
+
+
+
+
+
+  const EquipSearch = () => {
+    return (
+      <SafeAreaView style={{flex: 1}}>
+        <DealerSelection 
+          dealerText={dealerText}
+          onDealerTextChange={setDealerText}
+          onConfirm={() => {
+            // 处理经销商确认逻辑
+            console.log('经销商确认:', dealerText);
+          }}
+        />
+      </SafeAreaView>
+    );
   };
-
-  const handleApplyFilter = async (closeDrawer?: () => void) => {
-    // 筛选状态已经更新，FaultList 组件会自动重新加载数据
-    if (closeDrawer) {
-      closeDrawer();
-    }
-  };
-
-  const handleResetFilter = async () => {
-    const resetFilter: FilterState = {
-      startDate: null,
-      endDate: null,
-      sortBy: 'time',
-      severity: '',
-      faultCode: ''
-    };
-    setFilterState(resetFilter);
-  };
-
-  const FilterContent = (closeDrawer: () => void) => (
-    <FaultFilterDrawer
-      filterState={filterState}
-      onFilterChange={handleFilterChange}
-      onApplyFilter={() => handleApplyFilter(closeDrawer)}
-      onResetFilter={handleResetFilter}
-    />
-  );
 
   return (
     <CustomDrawer
       title={t("equipment.detail")}
-      drawerContent={FilterContent}
+      drawerContent={EquipSearch}
     >
       <View style={styles.container}>
         {/* header bar of the equipment detal  */}
@@ -91,7 +77,7 @@ export default function EquipmentFaultAlert() {
             ]}
           />
           {selectedTab === 'faultList' && (
-            <FaultList filterState={filterState} />
+            <FaultList />
           ) }
           {selectedTab === 'faultStatistics' && (
             <UseAnalysis />

@@ -45,6 +45,7 @@ export default function EmptyDrawer({ title, children, drawerContent }: DrawerPr
         renderNavigationView={ () => drawerContent?.(helpers) }
         drawerPosition={DrawerPosition.RIGHT}
         drawerType={DrawerType.SLIDE}
+        drawerWidth={300} // 设置抽屉宽度与第一层侧边栏一致
       >
         {children(helpers)}
       </ReanimatedDrawerLayout>

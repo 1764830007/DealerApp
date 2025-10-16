@@ -1,368 +1,138 @@
-import WheelPicker from '@quidone/react-native-wheel-picker';
-import { useEffect, useRef, useState } from 'react';
-import {
-  Animated, Dimensions,
-  Modal,
-  ScrollView, StyleSheet, Text, TextInput, TouchableOpacity,
-  TouchableWithoutFeedback,
-  View
-} from 'react-native';
-import { Button, Checkbox, useTheme } from 'react-native-paper';
+import EmptyDrawer, { Helpers } from "@/components/devices/EmptyDrawer";
+import Ionicons from '@expo/vector-icons/Ionicons';
+import React, { useState } from 'react';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { GestureDetector } from 'react-native-gesture-handler';
+import { Button, TextInput, useTheme } from 'react-native-paper';
 
-const { height: screenHeight } = Dimensions.get('window');
-
-export interface FilterState {
-  equipmentSerialNumber: string;
-  customerName: string;
-  equipmentModel: string;
-  equipmentType: '全部' | '装载机' | '推土机' | '平地机' | '压路机';
-  selectedCustomers: string[];
+// 经销商选择组件
+export interface DealerSelectionProps {
+  dealerText: string;
+  onDealerTextChange: (text: string) => void;
+  onConfirm: () => void;
 }
 
-interface EquipmentFilterDrawerProps {
-  filterState: FilterState;
-  onFilterChange: (filter: FilterState) => void;
-  onApplyFilter: () => void;
-  onResetFilter: () => void;
-}
-
-export default function EquipmentListFilterDrawer({
-  filterState,
-  onFilterChange,
-  onApplyFilter,
-  onResetFilter
-}: EquipmentFilterDrawerProps) {
+export function DealerSelection({ dealerText, onDealerTextChange, onConfirm }: DealerSelectionProps) {
   const theme = useTheme();
-  const [showTypeModal, setShowTypeModal] = useState(false);
-  const [showCustomerModal, setShowCustomerModal] = useState(false);
-  const [selectedTypeValue, setSelectedTypeValue] = useState<FilterState['equipmentType']>(
-    filterState.equipmentType
-  );
-  const [customerSearchText, setCustomerSearchText] = useState('');
-  const [selectedCustomers, setSelectedCustomers] = useState<string[]>(
-    filterState.selectedCustomers || []
-  );
+  // 存储设备类型选中状态，'全部'单独处理
+  const [selectedDeviceTypes, setSelectedDeviceTypes] = useState<string[]>([]);
+  // 标记'全部'是否选中
+  const [isAllSelected, setIsAllSelected] = useState(false);
 
-  const slideAnim = useRef(new Animated.Value(screenHeight)).current;
-  const customerSlideAnim = useRef(new Animated.Value(screenHeight)).current;
+  // 设备类型数据
+  const deviceTypes = ['装载机', '推土机', '平地机', '压路机'];
 
-  useEffect(() => {
-    setSelectedTypeValue(filterState.equipmentType);
-  }, [filterState.equipmentType]);
-
-  useEffect(() => {
-    setSelectedCustomers(filterState.selectedCustomers || []);
-  }, [filterState.selectedCustomers]);
-
-  const openTypeModal = () => {
-    setShowTypeModal(true);
-    Animated.timing(slideAnim, {
-      toValue: 0,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
-  };
-
-  const closeTypeModal = () => {
-    Animated.timing(slideAnim, {
-      toValue: screenHeight,
-      duration: 300,
-      useNativeDriver: true,
-    }).start(() => {
-      setShowTypeModal(false);
-    });
-  };
-
-  const confirmType = () => {
-    onFilterChange({ ...filterState, equipmentType: selectedTypeValue });
-    closeTypeModal();
-  };
-
-  const openCustomerModal = () => {
-    setShowCustomerModal(true);
-    Animated.timing(customerSlideAnim, {
-      toValue: 0,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
-  };
-
-  const closeCustomerModal = () => {
-    Animated.timing(customerSlideAnim, {
-      toValue: screenHeight,
-      duration: 300,
-      useNativeDriver: true,
-    }).start(() => {
-      setShowCustomerModal(false);
-      setCustomerSearchText('');
-    });
-  };
-
-  const confirmCustomerSelection = () => {
-    const customerNames = selectedCustomers.join(', ');
-    onFilterChange({ 
-      ...filterState, 
-      customerName: customerNames,
-      selectedCustomers: selectedCustomers
-    });
-    closeCustomerModal();
-  };
-
-  const toggleCustomerSelection = (customer: string) => {
-    setSelectedCustomers(prev => {
-      if (prev.includes(customer)) {
-        return prev.filter(c => c !== customer);
-      } else {
-        return [...prev, customer];
+  // 处理设备类型按钮点击
+  const handleDeviceTypePress = (type: string) => {
+    if (type === '全部') {
+      // 点击'全部'，选中'全部'，取消其他选中
+      setIsAllSelected(!isAllSelected);
+      setSelectedDeviceTypes([]);
+    } else {
+      // 点击其他类型，若'全部'已选中，取消'全部'选中
+      if (isAllSelected) {
+        setIsAllSelected(false);
       }
-    });
-  };
-
-  // 模拟客户数据 - 实际项目中应该从API获取
-  const allCustomers = [
-    '张三',
-    '李四',
-    '王五',
-    '赵六',
-    '钱七',
-    '孙八',
-    '周九',
-    '吴十',
-    '郑十一',
-    '王十二'
-  ];
-
-  const filteredCustomers = allCustomers.filter(customer =>
-    customer.toLowerCase().includes(customerSearchText.toLowerCase())
-  );
-
-  const handleSerialNumberChange = (value: string) => {
-    onFilterChange({
-      ...filterState,
-      equipmentSerialNumber: value
-    });
-  };
-
-  const handleCustomerNameChange = (value: string) => {
-    onFilterChange({
-      ...filterState,
-      customerName: value
-    });
-  };
-
-  const handleEquipmentModelChange = (value: string) => {
-    onFilterChange({
-      ...filterState,
-      equipmentModel: value
-    });
+      // 切换当前类型的选中状态
+      if (selectedDeviceTypes.includes(type)) {
+        setSelectedDeviceTypes(prev => prev.filter(item => item !== type));
+      } else {
+        setSelectedDeviceTypes(prev => [...prev, type]);
+      }
+    }
   };
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <View style={styles.content}>
-        <View style={styles.filterItem}>
-          <Text style={[styles.label, { color: theme.colors.onSurface }]}>设备序列号</Text>
-          <TextInput
-            style={[styles.textInput, {
-              borderColor: theme.colors.outline,
-              backgroundColor: theme.colors.surface
-            }]}
-            placeholder="请输入设备序列号"
-            placeholderTextColor={theme.colors.onSurfaceVariant}
-            value={filterState.equipmentSerialNumber}
-            onChangeText={handleSerialNumberChange}
-          />
-        </View>
+    <View style={{ flex: 1 }}>
+      {/* 点击经销商，打开侧边栏，选择经销商，点击确认 */}
+      <EmptyDrawer drawerContent={(helpers: Helpers) => (
+        <>
+          <View style={[{ padding: 10 }]}>
+            {/* 设备序列号 */}
 
-        <View style={styles.filterItem}>
-          <Text style={[styles.label, { color: theme.colors.onSurface }]}>客户名称</Text>
-          <TouchableOpacity
-            style={[styles.typeButton, {
-              borderColor: theme.colors.outline,
-              backgroundColor: theme.colors.surface
-            }]}
-            onPress={openCustomerModal}
-          >
-            <Text style={[styles.typeButtonText, { color: theme.colors.onSurface }]}>
-              {filterState.customerName || '点击选择'}
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.filterItem}>
-          <Text style={[styles.label, { color: theme.colors.onSurface }]}>设备型号</Text>
-          <TextInput
-            style={[styles.textInput, {
-              borderColor: theme.colors.outline,
-              backgroundColor: theme.colors.surface
-            }]}
-            placeholder="点击选择"
-            placeholderTextColor={theme.colors.onSurfaceVariant}
-            value={filterState.equipmentModel}
-            onChangeText={handleEquipmentModelChange}
-          />
-        </View>
-
-        <View style={styles.filterItem}>
-          <Text style={[styles.label, { color: theme.colors.onSurface }]}>设备类型</Text>
-          <TouchableOpacity
-            style={[styles.typeButton, {
-              borderColor: theme.colors.outline,
-              backgroundColor: theme.colors.surface
-            }]}
-            onPress={openTypeModal}
-          >
-            <Text style={[styles.typeButtonText, { color: theme.colors.onSurface }]}>
-              {filterState.equipmentType}
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.buttonContainer}>
-          <Button
-            mode="contained"
-            onPress={onResetFilter}
-            style={styles.cancelButton}
-          >
-            取消
-          </Button>
-          <Button
-            mode="contained"
-            onPress={onApplyFilter}
-            style={styles.confirmButton}
-          >
-            确认
-          </Button>
-        </View>
-
-        <Modal
-          visible={showTypeModal}
-          transparent={true}
-          animationType="none"
-          onRequestClose={closeTypeModal}
-        >
-          <TouchableWithoutFeedback onPress={closeTypeModal}>
-            <View style={styles.modalOverlay} />
-          </TouchableWithoutFeedback>
-
-          <Animated.View
-            style={[
-              styles.modalContainer,
-              {
-                transform: [{ translateY: slideAnim }],
-                backgroundColor: theme.colors.background
-              }
-            ]}
-          >
-            <View style={styles.modalHeader}>
-              <TouchableOpacity
-                style={styles.headerButton}
-                onPress={closeTypeModal}
-              >
-                <Text style={[styles.headerText, { color: theme.colors.onSurfaceVariant }]}>
-                  取消
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.headerButton}
-                onPress={confirmType}
-              >
-                <Text style={[styles.headerText, { color: theme.colors.primary }]}>
-                  确认
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            <WheelPicker
-              data={[
-                { value: '全部', label: '全部' },
-                { value: '装载机', label: '装载机' },
-                { value: '推土机', label: '推土机' },
-                { value: '平地机', label: '平地机' },
-                { value: '压路机', label: '压路机' },
-              ]}
-              value={selectedTypeValue}
-              onValueChanged={({ item }) => setSelectedTypeValue(item.value as '全部' | '装载机' | '推土机' | '平地机' | '压路机')}
-              enableScrollByTapOnItem={true}
-              itemHeight={50}
-              style={styles.wheelPicker}
-              itemTextStyle={{ color: theme.colors.onSurface }}
-            />
-          </Animated.View>
-        </Modal>
-
-        {/* 客户选择模态框 */}
-        <Modal
-          visible={showCustomerModal}
-          transparent={true}
-          animationType="none"
-          onRequestClose={closeCustomerModal}
-        >
-          <TouchableWithoutFeedback onPress={closeCustomerModal}>
-            <View style={styles.modalOverlay} />
-          </TouchableWithoutFeedback>
-
-          <Animated.View
-            style={[
-              styles.customerModalContainer,
-              {
-                transform: [{ translateY: customerSlideAnim }],
-                backgroundColor: theme.colors.background
-              }
-            ]}
-          >
-            <View style={styles.customerModalHeader}>
-              <Text style={[styles.customerModalTitle, { color: theme.colors.onSurface }]}>
-                选择客户
-              </Text>
-            </View>
-
-            {/* 搜索框和确认按钮 */}
-            <View style={styles.searchContainer}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', padding: 16 }}>
+              <Ionicons name="search-outline" size={24} color="black" />
               <TextInput
-                style={[styles.searchInput, {
-                  borderColor: theme.colors.outline,
-                  backgroundColor: theme.colors.surface,
-                  color: theme.colors.onSurface
-                }]}
-                placeholder="搜索客户名称"
-                placeholderTextColor={theme.colors.onSurfaceVariant}
-                value={customerSearchText}
-                onChangeText={setCustomerSearchText}
+                value={dealerText}
+                onChangeText={onDealerTextChange}
+                style={{ flex: 1, marginHorizontal: 8 }}
+                placeholder="搜索经销商"
               />
-              <TouchableOpacity
-                style={[styles.confirmSearchButton, { backgroundColor: theme.colors.primary }]}
-                onPress={confirmCustomerSelection}
-              >
-                <Text style={[styles.confirmSearchText, { color: theme.colors.onPrimary }]}>
-                  确认
-                </Text>
-              </TouchableOpacity>
+              <GestureDetector gesture={helpers.closeDrawer}>
+                <Button onPress={onConfirm}>确认</Button>
+              </GestureDetector>
             </View>
-
-            {/* 客户列表 */}
-            <ScrollView style={styles.customerList}>
-              {filteredCustomers.map((customer) => (
-                <TouchableOpacity
-                  key={customer}
-                  style={styles.customerItem}
-                  onPress={() => toggleCustomerSelection(customer)}
-                >
-                  <Checkbox.Android
-                    status={selectedCustomers.includes(customer) ? 'checked' : 'unchecked'}
-                    onPress={() => toggleCustomerSelection(customer)}
-                    color={theme.colors.primary}
-                  />
-                  <Text style={[styles.customerName, { color: theme.colors.onSurface }]}>
-                    {customer}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </Animated.View>
-        </Modal>
-      </View>
-    </ScrollView>
+          </View>
+        </>
+      )} >
+        {(helpers: Helpers) => (
+          <>
+            <View style={{ padding: 10 }}>
+              <View style={styles.filterItem}>
+                <Text style={[styles.label, { color: theme.colors.onSurface }]}>设备序列号</Text>
+                <TextInput
+                  style={[styles.textInput, {
+                    borderColor: theme.colors.outline,
+                    color: theme.colors.onSurface,
+                    backgroundColor: theme.colors.surface
+                  }]}
+                  placeholder="请输入设备序列号"
+               
+                />
+              </View>
+              <View>
+                <Text style={[styles.label, { color: theme.colors.onSurface }]}>客户名称</Text>
+                <GestureDetector gesture={helpers.openDrawer}>
+                  <TouchableOpacity
+                    style={{
+                      paddingLeft: 20, paddingRight: 10,
+                      flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center'
+                    }}>
+                    <Text>点击选择</Text>
+                    <Text style={{ fontSize: 18, fontWeight: 'bold' }}>›</Text>
+                  </TouchableOpacity>
+                </GestureDetector>
+              </View>
+              <View>
+                <Text style={[styles.label, { color: theme.colors.onSurface, marginTop: 10 }]}>设备型号</Text>
+                <GestureDetector gesture={helpers.openDrawer}>
+                  <TouchableOpacity
+                    style={{
+                      paddingLeft: 20, paddingRight: 10,
+                      flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center'
+                    }}>
+                    <Text>点击选择</Text>
+                    <Text style={{ fontSize: 18, fontWeight: 'bold' }}>›</Text>
+                  </TouchableOpacity>
+                </GestureDetector>
+              </View>
+              <View>
+                <Text style={[styles.label, { color: theme.colors.onSurface, marginTop: 10 }]}>设备类型</Text>
+                <View style={styles.deviceTypeContainer}>
+                  <TouchableOpacity
+                    style={[styles.deviceTypeButton, isAllSelected && styles.selectedDeviceTypeButton]}
+                    onPress={() => handleDeviceTypePress('全部')}
+                  >
+                    <Text style={[styles.deviceTypeText, isAllSelected && styles.selectedDeviceTypeText]}>全部</Text>
+                  </TouchableOpacity>
+                  {deviceTypes.map(type => (
+                    <TouchableOpacity
+                      key={type}
+                      style={[styles.deviceTypeButton, selectedDeviceTypes.includes(type) && styles.selectedDeviceTypeButton]}
+                      onPress={() => handleDeviceTypePress(type)}
+                    >
+                      <Text style={[styles.deviceTypeText, selectedDeviceTypes.includes(type) && styles.selectedDeviceTypeText]}>
+                        {type}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+            </View>
+          </>
+        )}
+      </EmptyDrawer>
+    </View>
   );
 }
 
@@ -383,37 +153,43 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginBottom: 8,
   },
-  textInput: {
-    borderWidth: 1,
-    borderRadius: 4,
-    padding: 12,
-    fontSize: 16,
-    height: 48,
-  },
-  typeButton: {
+  dateButton: {
     borderWidth: 1,
     borderRadius: 4,
     padding: 12,
     height: 48,
     justifyContent: 'center',
   },
-  typeButtonText: {
+  dateButtonText: {
     fontSize: 16,
+  },
+  radioItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  radioLabel: {
+    fontSize: 16,
+    marginLeft: 8,
+  },
+  textInput: {
+    borderWidth: 0.5,
+    borderRadius: 4,
+    padding: 12,
+    fontSize: 16,
+    height: 20,
   },
   buttonContainer: {
     marginTop: 24,
-    flexDirection: 'row',
-    justifyContent: 'space-around',
     gap: 12,
   },
-  cancelButton: {
+  applyButton: {
     borderRadius: 4,
-    flex: 1,
   },
-  confirmButton: {
+  resetButton: {
     borderRadius: 4,
-    flex: 1,
   },
+  // 弹窗样式
   modalOverlay: {
     position: 'absolute',
     top: 0,
@@ -446,71 +222,41 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
   },
+  // Wheel Picker 样式
   wheelPicker: {
     width: '100%',
     height: 200,
   },
-  customerModalContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    padding: 20,
-    maxHeight: screenHeight * 0.8,
-  },
-  customerModalHeader: {
+  // 设备类型容器样式
+  deviceTypeContainer: {
     flexDirection: 'row',
-    justifyContent: 'center',
-    marginBottom: 16,
-    paddingBottom: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#ccc',
+    flexWrap: 'wrap',
+    gap: 10,
+    paddingLeft: 20,
+    justifyContent: 'space-between',
   },
-  customerModalTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-    gap: 12,
-  },
-  searchInput: {
-    flex: 1,
+  // 设备类型按钮样式
+  deviceTypeButton: {
+    borderRadius: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
     borderWidth: 1,
-    borderRadius: 4,
-    padding: 12,
-    fontSize: 16,
-    height: 48,
-  },
-  confirmSearchButton: {
-    borderRadius: 4,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    height: 48,
+    borderColor: '#ccc',
+    minWidth: 120,
+    alignItems: 'center',
     justifyContent: 'center',
-    alignItems: 'center',
   },
-  confirmSearchText: {
-    fontSize: 16,
-    fontWeight: '500',
+  // 选中的设备类型按钮样式
+  selectedDeviceTypeButton: {
+    backgroundColor: 'blue',
+    borderColor: 'blue',
   },
-  customerList: {
-    maxHeight: 300,
+  // 设备类型文字样式
+  deviceTypeText: {
+    color: 'black',
   },
-  customerItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-  },
-  customerName: {
-    fontSize: 16,
-    marginLeft: 12,
+  // 选中的设备类型文字样式
+  selectedDeviceTypeText: {
+    color: 'white',
   },
 });

@@ -44,7 +44,7 @@ const Index = () => {
   const [hasWorkOrderAssign, setHasWorkOrderAssign] = useState<boolean>(false);
   const [hasWorkOrderExecute, setHasWorkOrderExecute] = useState<boolean>(false);
   const [workOrderPermissionType, setWorkOrderPermissionType] = useState<string>('none');
-  
+
   // 原有状态变量不变...
   const [workOrders, setWorkOrders] = useState<WorkOrder[]>([]);
   const [loading, setLoading] = useState(true);
@@ -80,7 +80,7 @@ const Index = () => {
       setHasWorkOrderAssign(hasAssign === 'true');
       setHasWorkOrderExecute(hasExecute === 'true');
       setWorkOrderPermissionType(permissionType || 'none');
-      
+
       // 设置权限加载完成状态
       setPermissionsLoaded(true);
 
@@ -118,7 +118,7 @@ const Index = () => {
         department: null
       };
     }
-    
+
     // 派工权限
     if (!hasWorkOrderCreate && hasWorkOrderAssign && !hasWorkOrderExecute) {
       console.log('获取待派工参数 - 派工权限');
@@ -136,7 +136,7 @@ const Index = () => {
         department: null
       };
     }
-    
+
     // 执行权限
     if (!hasWorkOrderCreate && !hasWorkOrderAssign && hasWorkOrderExecute) {
       console.log('获取待派工参数 - 执行权限');
@@ -154,7 +154,7 @@ const Index = () => {
         department: null
       };
     }
-    
+
     // 申请+派工权限
     if (hasWorkOrderCreate && hasWorkOrderAssign && !hasWorkOrderExecute) {
       console.log('获取待派工参数 - 申请+派工权限');
@@ -172,7 +172,7 @@ const Index = () => {
         department: null
       };
     }
-    
+
     // 申请+执行权限
     if (hasWorkOrderCreate && !hasWorkOrderAssign && hasWorkOrderExecute) {
       console.log('获取待派工参数 - 申请+执行权限');
@@ -190,7 +190,7 @@ const Index = () => {
         department: null
       };
     }
-    
+
     // 派工+执行权限
     if (!hasWorkOrderCreate && hasWorkOrderAssign && hasWorkOrderExecute) {
       console.log('获取待派工参数 - 派工+执行权限');
@@ -208,7 +208,7 @@ const Index = () => {
         department: null
       };
     }
-    
+
     // 申请+派工+执行权限
     if (hasWorkOrderCreate && hasWorkOrderAssign && hasWorkOrderExecute) {
       console.log('获取待派工参数 - 申请+派工+执行权限');
@@ -226,7 +226,7 @@ const Index = () => {
         department: null
       };
     }
-    
+
     // 默认使用派工权限的参数
     return {
       limit: 1000,
@@ -246,7 +246,7 @@ const Index = () => {
   // 根据权限获取待出发数量的API参数配置
   const getPendingDepartParams = (): any => {
     const currentUser = 'F8KM_liyueye'; // 当前用户名，可以从token中获取
-    
+
     // 申请权限
     if (hasWorkOrderCreate && !hasWorkOrderAssign && !hasWorkOrderExecute) {
       console.log('获取待出发参数 - 申请权限');
@@ -258,7 +258,7 @@ const Index = () => {
         workOrderNoOrMachineNo: null
       };
     }
-    
+
     // 派工权限
     if (!hasWorkOrderCreate && hasWorkOrderAssign && !hasWorkOrderExecute) {
       console.log('获取待出发参数 - 派工权限');
@@ -276,7 +276,7 @@ const Index = () => {
         department: null
       };
     }
-    
+
     // 执行权限
     if (!hasWorkOrderCreate && !hasWorkOrderAssign && hasWorkOrderExecute) {
       console.log('获取待出发参数 - 执行权限');
@@ -288,7 +288,7 @@ const Index = () => {
         workOrderNoOrMachineNo: null
       };
     }
-    
+
     // 申请+派工权限
     if (hasWorkOrderCreate && hasWorkOrderAssign && !hasWorkOrderExecute) {
       console.log('获取待出发参数 - 申请+派工权限');
@@ -306,7 +306,7 @@ const Index = () => {
         department: null
       };
     }
-    
+
     // 申请+执行权限
     if (hasWorkOrderCreate && !hasWorkOrderAssign && hasWorkOrderExecute) {
       console.log('获取待出发参数 - 申请+执行权限');
@@ -318,7 +318,7 @@ const Index = () => {
         workOrderNoOrMachineNo: null
       };
     }
-    
+
     // 派工+执行权限
     if (!hasWorkOrderCreate && hasWorkOrderAssign && hasWorkOrderExecute) {
       console.log('获取待出发参数 - 派工+执行权限');
@@ -330,7 +330,7 @@ const Index = () => {
         workOrderNoOrMachineNo: null
       };
     }
-    
+
     // 申请+派工+执行权限
     if (hasWorkOrderCreate && hasWorkOrderAssign && hasWorkOrderExecute) {
       console.log('获取待出发参数 - 申请+派工+执行权限');
@@ -342,7 +342,7 @@ const Index = () => {
         workOrderNoOrMachineNo: null
       };
     }
-    
+
     // 默认使用执行权限的参数
     return {
       limit: 1000,
@@ -357,7 +357,7 @@ const Index = () => {
   const fetchOrderSegCount = async (segStatusId: number): Promise<number> => {
     try {
       let requestParams: any;
-      
+
       requestParams = getPendingAssignmentParams();
       console.log(`待派工请求参数 `, requestParams);
       const response = await api.post<any>('/services/app/WorkOrderService/GetWorkOrdersByParameters', requestParams);
@@ -379,7 +379,7 @@ const Index = () => {
   // 根据权限获取进行中数量的API参数配置
   const getInProgressParams = (): any => {
     const currentUser = 'F8KM_liyueye'; // 当前用户名，可以从token中获取
-    
+
     // 申请权限
     if (hasWorkOrderCreate && !hasWorkOrderAssign && !hasWorkOrderExecute) {
       console.log('获取进行中参数 - 申请权限');
@@ -391,7 +391,7 @@ const Index = () => {
         workOrderNoOrMachineNo: null
       };
     }
-    
+
     // 派工权限
     if (!hasWorkOrderCreate && hasWorkOrderAssign && !hasWorkOrderExecute) {
       console.log('获取进行中参数 - 派工权限');
@@ -402,26 +402,26 @@ const Index = () => {
         workOrderNoOrMachineNo: null,
         workOrderSource: null,
         onsiteOrNot: null,
-        status: [4,5,6,8],  // 进行中状态ID
+        status: [4, 5, 6, 8],  // 进行中状态ID
         type: null,
         dealer: null,
         orderByLastUpdatedTime: false,
         department: null
       };
     }
-    
+
     // 执行权限
     if (!hasWorkOrderCreate && !hasWorkOrderAssign && hasWorkOrderExecute) {
       console.log('获取进行中参数 - 执行权限');
       return {
         limit: 2,
         offset: 0,
-        segStatusIds: [4,5,6,8],  // 进行中状态ID
+        segStatusIds: [4, 5, 6, 8],  // 进行中状态ID
         onsiteOrNot: 'Y',
         workOrderNoOrMachineNo: null
       };
     }
-    
+
     // 申请+派工权限
     if (hasWorkOrderCreate && hasWorkOrderAssign && !hasWorkOrderExecute) {
       console.log('获取进行中参数 - 申请+派工权限');
@@ -432,50 +432,50 @@ const Index = () => {
         workOrderNoOrMachineNo: null,
         workOrderSource: null,
         onsiteOrNot: null,
-        status: [4,5,6,8],  // 进行中状态ID
+        status: [4, 5, 6, 8],  // 进行中状态ID
         type: null,
         dealer: null,
         orderByLastUpdatedTime: false,
         department: null
       };
     }
-    
+
     // 申请+执行权限
     if (hasWorkOrderCreate && !hasWorkOrderAssign && hasWorkOrderExecute) {
       console.log('获取进行中参数 - 申请+执行权限');
       return {
         limit: 2,
         offset: 0,
-        segStatusIds: [4,5,6,8],  // 进行中状态ID
+        segStatusIds: [4, 5, 6, 8],  // 进行中状态ID
         onsiteOrNot: 'Y',
         workOrderNoOrMachineNo: null
       };
     }
-    
+
     // 派工+执行权限
     if (!hasWorkOrderCreate && hasWorkOrderAssign && hasWorkOrderExecute) {
       console.log('获取进行中参数 - 派工+执行权限');
       return {
         limit: 2,
         offset: 0,
-        segStatusIds: [4,5,6,8],  // 进行中状态ID
+        segStatusIds: [4, 5, 6, 8],  // 进行中状态ID
         onsiteOrNot: 'Y',
         workOrderNoOrMachineNo: null
       };
     }
-    
+
     // 申请+派工+执行权限
     if (hasWorkOrderCreate && hasWorkOrderAssign && hasWorkOrderExecute) {
       console.log('获取进行中参数 - 申请+派工+执行权限');
       return {
         limit: 2,
         offset: 0,
-        segStatusIds: [4,5,6,8],  // 进行中状态ID
+        segStatusIds: [4, 5, 6, 8],  // 进行中状态ID
         onsiteOrNot: 'Y',
         workOrderNoOrMachineNo: null
       };
     }
-    
+
     // 默认使用执行权限的参数
     return {
       limit: 1000,
@@ -491,17 +491,17 @@ const Index = () => {
     try {
       const requestParams = getPendingDepartParams();
       let response: any;
-      
+
       // 根据权限选择不同的API
-      if ((!hasWorkOrderCreate && hasWorkOrderAssign && !hasWorkOrderExecute) || 
-          (hasWorkOrderCreate && hasWorkOrderAssign && !hasWorkOrderExecute)) {
+      if ((!hasWorkOrderCreate && hasWorkOrderAssign && !hasWorkOrderExecute) ||
+        (hasWorkOrderCreate && hasWorkOrderAssign && !hasWorkOrderExecute)) {
         // 派工权限和申请+派工权限使用GetWorkOrdersByParameters API
         response = await api.post<any>('/services/app/WorkOrderService/GetWorkOrdersByParameters', requestParams);
       } else {
         // 其他权限使用GetWorkOrdersBySegStatus API
         response = await api.post<any>('/services/app/WorkOrderService/GetWorkOrdersBySegStatus', requestParams);
       }
-      
+
       const data = response.data;
       //console.log('获取待出发数量的API响应数据:', data);
 
@@ -522,17 +522,17 @@ const Index = () => {
     try {
       const requestParams = getInProgressParams();
       let response: any;
-      
+
       // 根据权限选择不同的API
-      if ((!hasWorkOrderCreate && hasWorkOrderAssign && !hasWorkOrderExecute) || 
-          (hasWorkOrderCreate && hasWorkOrderAssign && !hasWorkOrderExecute)) {
+      if ((!hasWorkOrderCreate && hasWorkOrderAssign && !hasWorkOrderExecute) ||
+        (hasWorkOrderCreate && hasWorkOrderAssign && !hasWorkOrderExecute)) {
         // 派工权限和申请+派工权限使用GetWorkOrdersByParameters API
         response = await api.post<any>('/services/app/WorkOrderService/GetWorkOrdersByParameters', requestParams);
       } else {
         // 其他权限使用GetWorkOrdersBySegStatus API
         response = await api.post<any>('/services/app/WorkOrderService/GetWorkOrdersBySegStatus', requestParams);
       }
-      
+
       const data = response.data;
       //console.log('获取进行中数量的API响应数据:', data);
 
@@ -553,7 +553,7 @@ const Index = () => {
     try {
       // 检查是否有执行权限
       setHasExecutingPermission(hasWorkOrderExecute);
-      
+
       if (!hasWorkOrderExecute) {
         setLatestWorkOrder(null);
         return;
@@ -567,7 +567,7 @@ const Index = () => {
         onsiteOrNot: 'Y',
         workOrderNoOrMachineNo: null
       };
-      
+
       const response = await api.post<any>('/services/app/WorkOrderService/GetWorkOrdersBySegStatus', requestParams);
       const data = response.data;
       //console.log('获取最新工单的API响应数据:', data);
@@ -595,8 +595,8 @@ const Index = () => {
   };
   // 根据权限更新用户权限状态和工单标题
   const updateUserPermissions = () => {
- 
-    
+
+
     // 根据权限设置工单标题 - 按照新的权限逻辑
     if (hasWorkOrderCreate && !hasWorkOrderAssign && !hasWorkOrderExecute) {
       // 申请 -> 显示"我的报修"
@@ -629,7 +629,7 @@ const Index = () => {
   const fetchAllPendingCounts = async () => {
     // 更新权限状态
     updateUserPermissions();
-    
+
     // 并行请求三类状态数据（提高效率，避免串行等待）
     const [assignCount, departCount, progressCount] = await Promise.all([
       fetchOrderSegCount(1), // 待分配（segStatusIds=1）
@@ -642,7 +642,7 @@ const Index = () => {
     setPendingDepartCount(departCount);
     setInProgressCount(progressCount);
     setTotalPendingCount(assignCount + departCount + progressCount);
-    
+
     // 获取最新工单
     await fetchLatestWorkOrder();
   };
@@ -652,7 +652,7 @@ const Index = () => {
     try {
       setLoading(true);
       setError(null);
-      
+
       let workOrdersData: WorkOrder[] = [];
       let displayMessage = '';
       console.log('当前权限状态:', {
@@ -671,7 +671,7 @@ const Index = () => {
           status: [1], // 待派工状态ID
           orderByLastUpdatedTime: true
         };
-        
+
         const response = await api.post<any>('/services/app/WorkOrderService/GetWorkOrdersByParameters', requestParams);
         console.log('仅申请权限API响应数据:', response.data);
 
@@ -685,13 +685,13 @@ const Index = () => {
             constructionSite: order.constructionLocation || '',
             maintenanceDept: order.maintenanceDeptName || ''
           }));
-          
+
           if (workOrdersData.length === 0) {
             displayMessage = locale === 'zh' ? '您目前没有在申请中的工单' : 'You do not have any work order applications';
           }
         }
       }
-      
+
       // 2. 仅派工权限
       else if (!hasWorkOrderCreate && hasWorkOrderAssign && !hasWorkOrderExecute) {
         console.log('获取工单数据 - 仅派工权限');
@@ -701,7 +701,7 @@ const Index = () => {
           orderByLastUpdatedTime: true,
           status: [1, 3, 4, 5, 6, 8] // 所有工单状态
         };
-        
+
         const response = await api.post<any>('/services/app/WorkOrderService/GetWorkOrdersByParameters', requestParams);
         console.log('仅派工权限API响应数据:', response.data);
 
@@ -715,13 +715,13 @@ const Index = () => {
             constructionSite: order.constructionLocation || '',
             maintenanceDept: order.maintenanceDeptName || ''
           }));
-          
+
           if (workOrdersData.length === 0) {
             displayMessage = locale === 'zh' ? '暂无工单' : 'No work order to operate';
           }
         }
       }
-      
+
       // 3. 仅执行权限
       else if (!hasWorkOrderCreate && !hasWorkOrderAssign && hasWorkOrderExecute) {
         console.log('获取工单数据 - 仅执行权限');
@@ -732,7 +732,7 @@ const Index = () => {
           onsiteOrNot: 'Y',
           orderByLastUpdatedTime: true
         };
-        
+
         const response = await api.post<any>('/services/app/WorkOrderService/GetWorkOrdersBySegStatus', requestParams);
         console.log('仅执行权限API响应数据:', response.data);
 
@@ -746,13 +746,13 @@ const Index = () => {
             constructionSite: order.constructionLocation || '',
             maintenanceDept: order.maintenanceDeptName || ''
           }));
-          
+
           if (workOrdersData.length === 0) {
             displayMessage = locale === 'zh' ? '您目前没有待出发工单' : 'you do not have work orders for departure';
           }
         }
       }
-      
+
       // 4. 申请+派工权限
       else if (hasWorkOrderCreate && hasWorkOrderAssign && !hasWorkOrderExecute) {
         console.log('获取工单数据 - 申请+派工权限');
@@ -762,7 +762,7 @@ const Index = () => {
           orderByLastUpdatedTime: true,
           status: [1, 3, 4, 5, 6, 8] // 所有工单状态
         };
-        
+
         const response = await api.post<any>('/services/app/WorkOrderService/GetWorkOrdersByParameters', requestParams);
         console.log('申请+派工权限API响应数据:', response.data);
 
@@ -776,13 +776,13 @@ const Index = () => {
             constructionSite: order.constructionLocation || '',
             maintenanceDept: order.maintenanceDeptName || ''
           }));
-          
+
           if (workOrdersData.length === 0) {
             displayMessage = locale === 'zh' ? '暂无工单' : 'No work order to operate';
           }
         }
       }
-      
+
       // 5. 申请+执行权限
       else if (hasWorkOrderCreate && !hasWorkOrderAssign && hasWorkOrderExecute) {
         console.log('获取工单数据 - 申请+执行权限');
@@ -793,7 +793,7 @@ const Index = () => {
           onsiteOrNot: 'Y',
           orderByLastUpdatedTime: true
         };
-        
+
         const response = await api.post<any>('/services/app/WorkOrderService/GetWorkOrdersBySegStatus', requestParams);
         console.log('申请+执行权限API响应数据:', response.data);
 
@@ -807,13 +807,13 @@ const Index = () => {
             constructionSite: order.constructionLocation || '',
             maintenanceDept: order.maintenanceDeptName || ''
           }));
-          
+
           if (workOrdersData.length === 0) {
             displayMessage = locale === 'zh' ? '您目前没有待出发工单' : 'you do not have work orders for departure';
           }
         }
       }
-      
+
       // 6. 派工+执行权限
       else if (!hasWorkOrderCreate && hasWorkOrderAssign && hasWorkOrderExecute) {
         console.log('获取工单数据 - 派工+执行权限');
@@ -823,7 +823,7 @@ const Index = () => {
           orderByLastUpdatedTime: true,
           status: [1, 3, 4, 5, 6, 8] // 所有工单状态
         };
-        
+
         const response = await api.post<any>('/services/app/WorkOrderService/GetWorkOrdersByParameters', requestParams);
         console.log('派工+执行权限API响应数据:', response.data);
 
@@ -837,13 +837,13 @@ const Index = () => {
             constructionSite: order.constructionLocation || '',
             maintenanceDept: order.maintenanceDeptName || ''
           }));
-          
+
           if (workOrdersData.length === 0) {
             displayMessage = locale === 'zh' ? '暂无工单' : 'No work order to operate';
           }
         }
       }
-      
+
       // 7. 申请+派工+执行权限
       else if (hasWorkOrderCreate && hasWorkOrderAssign && hasWorkOrderExecute) {
         console.log('获取工单数据 - 申请+派工+执行权限');
@@ -853,7 +853,7 @@ const Index = () => {
           orderByLastUpdatedTime: true,
           status: [1, 3, 4, 5, 6, 8] // 所有工单状态
         };
-        
+
         const response = await api.post<any>('/services/app/WorkOrderService/GetWorkOrdersByParameters', requestParams);
         console.log('申请+派工+执行权限API响应数据:', response.data);
 
@@ -867,7 +867,7 @@ const Index = () => {
             constructionSite: order.constructionLocation || '',
             maintenanceDept: order.maintenanceDeptName || ''
           }));
-          
+
           if (workOrdersData.length === 0) {
             displayMessage = locale === 'zh' ? '暂无工单' : 'No work order to operate';
           }
@@ -932,43 +932,43 @@ const Index = () => {
   const getNoDataMessage = (): string => {
     if (hasWorkOrderCreate && !hasWorkOrderAssign && !hasWorkOrderExecute) {
       // 申请权限
-      return locale === 'zh' 
-        ? '您目前没有在申请中的工单' 
+      return locale === 'zh'
+        ? '您目前没有在申请中的工单'
         : 'You do not have any work order applications';
     } else if (!hasWorkOrderCreate && hasWorkOrderAssign && !hasWorkOrderExecute) {
       // 派工权限
-      return locale === 'zh' 
-        ? '您目前没有在申请中的工单' 
+      return locale === 'zh'
+        ? '您目前没有在申请中的工单'
         : 'You do not have any work order applications';
     } else if (!hasWorkOrderCreate && !hasWorkOrderAssign && hasWorkOrderExecute) {
       // 执行权限
-      return locale === 'zh' 
-        ? '您目前没有在执行中的工单，请选择待出发的工单进行出工' 
+      return locale === 'zh'
+        ? '您目前没有在执行中的工单，请选择待出发的工单进行出工'
         : 'You do not have any work order being executed right now，please select an new order for departure';
     } else if (hasWorkOrderCreate && hasWorkOrderAssign && !hasWorkOrderExecute) {
       // 申请+派工权限
-      return locale === 'zh' 
-        ? '您目前没有待派工的工单' 
+      return locale === 'zh'
+        ? '您目前没有待派工的工单'
         : 'You do not have any work order for allocation';
     } else if (hasWorkOrderCreate && !hasWorkOrderAssign && hasWorkOrderExecute) {
       // 申请+执行权限
-      return locale === 'zh' 
-        ? '您目前没有在执行中的工单，请选择待出发的工单进行出工' 
+      return locale === 'zh'
+        ? '您目前没有在执行中的工单，请选择待出发的工单进行出工'
         : 'You do not have any work order being executed right now，please select an new order for departure';
     } else if (!hasWorkOrderCreate && hasWorkOrderAssign && hasWorkOrderExecute) {
       // 派工+执行权限
-      return locale === 'zh' 
-        ? '您目前没有在执行中的工单，请选择待出发的工单进行出工' 
+      return locale === 'zh'
+        ? '您目前没有在执行中的工单，请选择待出发的工单进行出工'
         : 'You do not have any work order being executed right now，please select an new order for departure';
     } else if (hasWorkOrderCreate && hasWorkOrderAssign && hasWorkOrderExecute) {
       // 申请+派工+执行权限
-      return locale === 'zh' 
-        ? '您目前没有在执行中的工单，请选择待出发的工单进行出工' 
+      return locale === 'zh'
+        ? '您目前没有在执行中的工单，请选择待出发的工单进行出工'
         : 'You do not have any work order being executed right now，please select an new order for departure';
     } else {
       // 默认情况
-      return locale === 'zh' 
-        ? '暂无工单数据' 
+      return locale === 'zh'
+        ? '暂无工单数据'
         : 'No work order data';
     }
   };
@@ -980,7 +980,7 @@ const Index = () => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <ScrollView 
+      <ScrollView
         style={styles.scrollView}
         refreshControl={
           <RefreshControl
@@ -995,7 +995,7 @@ const Index = () => {
         <View style={styles.topBar}>
           <Text style={[styles.companyName, { color: theme.colors.onSurface }]}>{dealerName}</Text>
           <View style={styles.topIcons}>
-            
+
             <View style={styles.bellIcon}>
               <Icon source="bell" size={24} />
             </View>
@@ -1003,7 +1003,7 @@ const Index = () => {
         </View>
 
         {/* 待完成统计区 */}
-        <View style={[styles.todoStats,{ backgroundColor: theme.colors.surface, shadowColor: theme.dark ? '#000' : '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.3, shadowRadius: 4, elevation: 5 }]}>
+        <View style={[styles.todoStats, { backgroundColor: theme.colors.surface, shadowColor: theme.dark ? '#000' : '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.3, shadowRadius: 4, elevation: 5 }]}>
           <View style={{ backgroundColor: theme.dark ? '#333333' : '#367cc7ff' }}>
             <View style={styles.statsHeader}>
               {/* 标题：待完成总数（动态） */}
@@ -1098,86 +1098,90 @@ const Index = () => {
 
         {/* 全部工单区 - 所有权限都可见 */}
         <View style={styles.allWorkOrders}>
-            <View style={styles.workOrdersHeader}>
-              <Text style={styles.workOrdersHeaderText}>{workOrderTitle}</Text>
-              <TouchableOpacity onPress={() => {
-                // 根据缓存中的权限跳转到不同页面
-                if (hasWorkOrderCreate && !hasWorkOrderAssign && !hasWorkOrderExecute) {
-                  // 只有申请权限：跳转到我的报修列表
-                  console.log('跳转到我的报修列表');
-                } else if (hasWorkOrderAssign || (hasWorkOrderCreate && hasWorkOrderAssign)) {
-                  // 有派工权限：跳转到全部工单页面
-                  console.log('跳转到全部工单页面');
-                } else if (!hasWorkOrderCreate && !hasWorkOrderAssign && hasWorkOrderExecute) {
-                  // 只有执行权限：跳转到我的工单页面
-                  console.log('跳转到我的工单页面');
-                } else {
-                  // 其他权限组合：默认跳转到全部工单页面
-                  console.log('跳转到全部工单页面');
-                }
-              }}>
-                <View style={styles.viewAll}>
-                  <Text style={styles.viewAllText}>{t('home.seeAll')}</Text>
-                  
-                </View>
-              </TouchableOpacity>
-            </View>
+          <View style={styles.workOrdersHeader}>
+            <Text style={styles.workOrdersHeaderText}>{workOrderTitle}</Text>
+            <TouchableOpacity onPress={() => {
+              // 根据缓存中的权限跳转到不同页面
+              if (hasWorkOrderCreate && !hasWorkOrderAssign && !hasWorkOrderExecute) {
+                // 只有申请权限：跳转到我的报修列表
+                console.log('跳转到我的报修列表');
+              } else if (hasWorkOrderAssign || (hasWorkOrderCreate && hasWorkOrderAssign)) {
+                // 有派工权限：跳转到全部工单页面
+                console.log('跳转到全部工单页面');
+              } else if (!hasWorkOrderCreate && !hasWorkOrderAssign && hasWorkOrderExecute) {
+                // 只有执行权限：跳转到我的工单页面
+                console.log('跳转到我的工单页面');
+              } else {
+                // 其他权限组合：默认跳转到全部工单页面
+                console.log('跳转到全部工单页面');
+              }
+            }}>
+              <View style={styles.viewAll}>
+                <Text style={styles.viewAllText}>{t('home.seeAll')}</Text>
 
-            {loading ? (
-              <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" />
-                <Text style={styles.loadingText}>加载中...</Text>
               </View>
-            ) : error ? (
-              <View style={styles.errorContainer}>
-                <Icon source="alert-circle" size={48} />
-                <Text style={styles.errorText}>{error}</Text>
-                <Button mode="contained" onPress={handleRefresh}>
-                  重试
-                </Button>
-              </View>
-            ) : workOrders.length === 0 ? (
-              <View style={styles.emptyContainer}>
-                <Icon source="file-remove" size={48} />
-                <Text style={styles.emptyText}>暂无工单数据</Text>
-              </View>
-            ) : (
-              workOrders.map((order) => (
-                <Card key={order.code} style={styles.workOrderCard}>
-                  <View style={styles.cardContent}>
-                    <View style={styles.workOrderHeader}>
-                      <Icon source="swap-vertical" size={20} />
-                      <Text style={styles.workOrderCode}>{order.code}</Text>
-                      <Button mode="outlined" style={styles.workOrderStatusBtn}>
-                        {order.status}
-                      </Button>
-                    </View>
-                    <View style={styles.workOrderInfo}>
-                      <Paragraph style={styles.workOrderInfoItem}>
-                        {t('home.productModel')}： {order.productModel}
-                      </Paragraph>
-                      <Paragraph style={styles.workOrderInfoItem}>
-                        {t('home.productSerialNumber')}： {order.serialNumber}
-                      </Paragraph>
-                      <Paragraph style={styles.workOrderInfoItem}>
-                        {t('home.reportTime')}： {order.reportTime}
-                      </Paragraph>
-                      
-                        <Paragraph style={styles.workOrderInfoItem}>
-                          施工地点： {order.constructionSite}
-                        </Paragraph>
-                     
-                     
-                        <Paragraph style={styles.workOrderInfoItem}>
-                          {t('home.repariDept')}： {order.maintenanceDept}
-                        </Paragraph>
-                     
-                    </View>
-                  </View>
-                </Card>
-              ))
-            )}
+            </TouchableOpacity>
           </View>
+
+          {loading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" />
+              <Text style={styles.loadingText}>加载中...</Text>
+            </View>
+          ) : error ? (
+            <View style={styles.errorContainer}>
+              <Icon source="alert-circle" size={48} />
+              <Text style={styles.errorText}>{error}</Text>
+              <Button mode="contained" onPress={handleRefresh}>
+                重试
+              </Button>
+            </View>
+          ) : workOrders.length === 0 ? (
+            <View style={styles.emptyContainer}>
+              <Icon source="file-remove" size={48} />
+              <Text style={styles.emptyText}>暂无工单数据</Text>
+            </View>
+          ) : (
+            workOrders.map((order) => (
+              <Card key={order.code} style={styles.workOrderCard}>
+                <View style={styles.cardContent}>
+                  <View style={styles.workOrderHeader}>
+                    <Icon source="swap-vertical" size={20} />
+                    <Text style={styles.workOrderCode}>{order.code}</Text>
+                    <Button mode="contained"
+                      compact
+                      buttonColor='#013b84'
+                      labelStyle={{ fontSize: 12, fontWeight: 400, marginVertical: 2 }}
+                      style={{ borderRadius: 4 }}>
+                      {order.status}
+                    </Button>
+                  </View>
+                  <View style={styles.workOrderInfo}>
+                    <Paragraph style={styles.workOrderInfoItem}>
+                      {t('home.productModel')}： {order.productModel}
+                    </Paragraph>
+                    <Paragraph style={styles.workOrderInfoItem}>
+                      {t('home.productSerialNumber')}： {order.serialNumber}
+                    </Paragraph>
+                    <Paragraph style={styles.workOrderInfoItem}>
+                      {t('home.reportTime')}： {order.reportTime}
+                    </Paragraph>
+
+                    <Paragraph style={styles.workOrderInfoItem}>
+                      施工地点： {order.constructionSite}
+                    </Paragraph>
+
+
+                    <Paragraph style={styles.workOrderInfoItem}>
+                      {t('home.repariDept')}： {order.maintenanceDept}
+                    </Paragraph>
+
+                  </View>
+                </View>
+              </Card>
+            ))
+          )}
+        </View>
       </ScrollView>
     </SafeAreaView>
   );

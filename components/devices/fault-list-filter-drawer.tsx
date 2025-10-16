@@ -2,7 +2,6 @@ import EmptyDrawer, { Helpers } from "@/components/devices/EmptyDrawer";
 import Ionicons from '@expo/vector-icons/Ionicons';
 import React, { useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { GestureDetector } from 'react-native-gesture-handler';
 import { Button, TextInput, useTheme } from 'react-native-paper';
 
 // 经销商选择组件
@@ -18,9 +17,13 @@ export function DealerSelection({ dealerText, onDealerTextChange, onConfirm }: D
   const [selectedDeviceTypes, setSelectedDeviceTypes] = useState<string[]>([]);
   // 标记'全部'是否选中
   const [isAllSelected, setIsAllSelected] = useState(false);
+  // 控制当前显示的抽屉类型：'customer' 或 'deviceModel'
+  const [currentDrawerType, setCurrentDrawerType] = useState<'customer' | 'deviceModel'>('customer');
 
   // 设备类型数据
   const deviceTypes = ['装载机', '推土机', '平地机', '压路机'];
+  // 设备型号数据
+  const deviceModels = ['型号A', '型号B', '型号C', '型号D'];
 
   // 处理设备类型按钮点击
   const handleDeviceTypePress = (type: string) => {
@@ -48,20 +51,68 @@ export function DealerSelection({ dealerText, onDealerTextChange, onConfirm }: D
       <EmptyDrawer drawerContent={(helpers: Helpers) => (
         <>
           <View style={[{ padding: 10 }]}>
-            {/* 设备序列号 */}
-
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', padding: 16 }}>
-              <Ionicons name="search-outline" size={24} color="black" />
-              <TextInput
-                value={dealerText}
-                onChangeText={onDealerTextChange}
-                style={{ flex: 1, marginHorizontal: 8 }}
-                placeholder="搜索经销商"
-              />
-              <GestureDetector gesture={helpers.closeDrawer}>
-                <Button onPress={onConfirm}>确认</Button>
-              </GestureDetector>
-            </View>
+            {currentDrawerType === 'customer' ? (
+              // 客户选择UI
+              <>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', padding: 16 }}>
+                  <Ionicons name="search-outline" size={24} color="black" />
+                  <TextInput
+                    value={dealerText}
+                    onChangeText={onDealerTextChange}
+                    style={{ flex: 1, marginHorizontal: 8 }}
+                    placeholder="搜索经销商"
+                  />
+                  <Button onPress={() => {
+                    onConfirm();
+                    helpers.closeDrawer();
+                  }}>确认</Button>
+                </View>
+                {/* 客户列表 */}
+                <View style={{ padding: 16 }}>
+                  <Text style={[styles.label, { color: theme.colors.onSurface }]}>客户列表</Text>
+                  <View style={styles.customerList}>
+                    <TouchableOpacity style={styles.customerItem}>
+                      <Text>客户A</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.customerItem}>
+                      <Text>客户B</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.customerItem}>
+                      <Text>客户C</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.customerItem}>
+                      <Text>客户D</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </>
+            ) : (
+              // 设备型号选择UI
+              <>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', padding: 16 }}>
+                  <Ionicons name="search-outline" size={24} color="black" />
+                  <TextInput
+                    style={{ flex: 1, marginHorizontal: 8 }}
+                    placeholder="搜索设备型号"
+                  />
+                  <Button onPress={() => {
+                    onConfirm();
+                    helpers.closeDrawer();
+                  }}>确认</Button>
+                </View>
+                {/* 设备型号列表 */}
+                <View style={{ padding: 16 }}>
+                  <Text style={[styles.label, { color: theme.colors.onSurface }]}>设备型号列表</Text>
+                  <View style={styles.deviceModelList}>
+                    {deviceModels.map(model => (
+                      <TouchableOpacity key={model} style={styles.deviceModelItem}>
+                        <Text>{model}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
+              </>
+            )}
           </View>
         </>
       )} >
@@ -82,29 +133,33 @@ export function DealerSelection({ dealerText, onDealerTextChange, onConfirm }: D
               </View>
               <View>
                 <Text style={[styles.label, { color: theme.colors.onSurface }]}>客户名称</Text>
-                <GestureDetector gesture={helpers.openDrawer}>
-                  <TouchableOpacity
-                    style={{
-                      paddingLeft: 20, paddingRight: 10,
-                      flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center'
-                    }}>
-                    <Text>点击选择</Text>
-                    <Text style={{ fontSize: 18, fontWeight: 'bold' }}>›</Text>
-                  </TouchableOpacity>
-                </GestureDetector>
+                <TouchableOpacity
+                  style={{
+                    paddingLeft: 20, paddingRight: 10,
+                    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center'
+                  }}
+                  onPress={() => {
+                    setCurrentDrawerType('customer');
+                    helpers.openDrawer();
+                  }}>
+                  <Text>点击选择</Text>
+                  <Text style={{ fontSize: 18, fontWeight: 'bold' }}>›</Text>
+                </TouchableOpacity>
               </View>
               <View>
                 <Text style={[styles.label, { color: theme.colors.onSurface, marginTop: 10 }]}>设备型号</Text>
-                <GestureDetector gesture={helpers.openDrawer}>
-                  <TouchableOpacity
-                    style={{
-                      paddingLeft: 20, paddingRight: 10,
-                      flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center'
-                    }}>
-                    <Text>点击选择</Text>
-                    <Text style={{ fontSize: 18, fontWeight: 'bold' }}>›</Text>
-                  </TouchableOpacity>
-                </GestureDetector>
+                <TouchableOpacity
+                  style={{
+                    paddingLeft: 20, paddingRight: 10,
+                    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center'
+                  }}
+                  onPress={() => {
+                    setCurrentDrawerType('deviceModel');
+                    helpers.openDrawer();
+                  }}>
+                  <Text>点击选择</Text>
+                  <Text style={{ fontSize: 18, fontWeight: 'bold' }}>›</Text>
+                </TouchableOpacity>
               </View>
               <View>
                 <Text style={[styles.label, { color: theme.colors.onSurface, marginTop: 10 }]}>设备类型</Text>
@@ -258,5 +313,23 @@ const styles = StyleSheet.create({
   // 选中的设备类型文字样式
   selectedDeviceTypeText: {
     color: 'white',
+  },
+  // 客户列表样式
+  customerList: {
+    marginTop: 10,
+  },
+  customerItem: {
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  // 设备型号列表样式
+  deviceModelList: {
+    marginTop: 10,
+  },
+  deviceModelItem: {
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
   },
 });

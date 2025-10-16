@@ -2,9 +2,7 @@ import { useRouter } from "expo-router";
 import React, { useRef } from "react";
 import { StyleSheet } from "react-native";
 import {
-  Gesture,
-  GestureHandlerRootView,
-  TapGesture
+  GestureHandlerRootView
 } from "react-native-gesture-handler";
 
 import ReanimatedDrawerLayout, {
@@ -21,8 +19,8 @@ export interface DrawerProps {
 }
 
 export type Helpers = {
-  openDrawer: TapGesture,
-  closeDrawer: TapGesture
+  openDrawer: () => void,
+  closeDrawer: () => void
 }
 
 export default function EmptyDrawer({ title, children, drawerContent }: DrawerProps) {
@@ -30,12 +28,8 @@ export default function EmptyDrawer({ title, children, drawerContent }: DrawerPr
   const drawerRef = useRef<DrawerLayoutMethods>(null);
   const theme = useTheme();
   const helpers: Helpers = {
-    openDrawer: Gesture.Tap()
-      .runOnJS(true)
-      .onStart(() => drawerRef.current?.openDrawer()),
-    closeDrawer: Gesture.Tap()
-      .runOnJS(true)
-      .onStart(() => drawerRef.current?.closeDrawer()),
+    openDrawer: () => drawerRef.current?.openDrawer(),
+    closeDrawer: () => drawerRef.current?.closeDrawer(),
   };
 
   return (
